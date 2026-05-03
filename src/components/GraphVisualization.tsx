@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import cytoscape, { Core, NodeSingular } from 'cytoscape'
 import { GraphNode, GraphEdge, VisualizationMode } from '@/lib/types'
 
@@ -24,6 +24,16 @@ export function GraphVisualization({
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
+  const hoverTimeoutRef = useRef<number | null>(null)
+
+  const handleNodeHover = useCallback((nodeId: string | null) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+    }
+    hoverTimeoutRef.current = window.setTimeout(() => {
+      onNodeHover?.(nodeId)
+    }, 50)
+  }, [onNodeHover])
 
   useEffect(() => {
     if (!containerRef.current || isInitialized) return
@@ -37,24 +47,25 @@ export function GraphVisualization({
           style: {
             'background-color': 'data(color)',
             label: 'data(label)',
-            color: 'oklch(0.95 0 0)',
+            color: '#ffffff',
             'text-valign': 'center',
             'text-halign': 'center',
-            'font-size': '14px',
+            'font-size': '11px',
             'font-family': 'Space Grotesk, sans-serif',
-            'font-weight': 500,
-            width: '60px',
-            height: '60px',
+            'font-weight': 400,
+            width: '70px',
+            height: '70px',
             'border-width': '2px',
-            'border-color': 'oklch(0.35 0.02 240)',
-            'text-outline-width': '2px',
-            'text-outline-color': 'oklch(0.15 0.03 250)',
+            'border-color': 'rgba(255, 255, 255, 0.2)',
+            'text-outline-width': '0px',
+            'text-wrap': 'wrap',
+            'text-max-width': '60px',
           },
         },
         {
           selector: 'node[type="champion"]',
           style: {
-            'background-color': 'oklch(0.35 0.02 240)',
+            'background-color': 'oklch(0.30 0.05 240)',
             shape: 'roundrectangle',
           },
         },
@@ -62,36 +73,44 @@ export function GraphVisualization({
           selector: 'node[type="trait"]',
           style: {
             shape: 'ellipse',
+            width: '80px',
+            height: '80px',
           },
         },
         {
           selector: 'node.selected',
           style: {
-            'border-width': '4px',
+            'border-width': '3px',
             'border-color': 'oklch(0.75 0.15 200)',
-            'background-color': 'oklch(0.45 0.08 240)',
           },
         },
         {
           selector: 'node.expanded',
           style: {
+            'border-width': '3px',
+            'border-color': 'oklch(0.70 0.20 45)',
+          },
+        },
+        {
+          selector: 'node:hover',
+          style: {
+            'border-width': '3px',
             'border-color': 'oklch(0.70 0.20 45)',
           },
         },
         {
           selector: 'node:active',
           style: {
-            'overlay-opacity': 0.2,
-            'overlay-color': 'oklch(0.70 0.20 45)',
+            'overlay-opacity': 0,
           },
         },
         {
           selector: 'edge',
           style: {
             width: 2,
-            'line-color': 'oklch(0.35 0.02 240)',
+            'line-color': 'oklch(0.40 0.03 240)',
             'curve-style': 'bezier',
-            opacity: 0.6,
+            opacity: 0.4,
           },
         },
         {
@@ -99,7 +118,7 @@ export function GraphVisualization({
           style: {
             width: 3,
             'line-color': 'oklch(0.75 0.15 200)',
-            opacity: 1,
+            opacity: 0.8,
           },
         },
       ],
@@ -129,20 +148,23 @@ export function GraphVisualization({
 
     cy.on('mouseover', 'node', (evt) => {
       const node = evt.target
-      onNodeHover?.(node.id())
+      handleNodeHover(node.id())
     })
 
     cy.on('mouseout', 'node', () => {
-      onNodeHover?.(null)
+      handleNodeHover(null)
     })
 
     cyRef.current = cy
     setIsInitialized(true)
 
     return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current)
+      }
       cy.destroy()
     }
-  }, [])
+  }, [handleNodeHover])
 
   useEffect(() => {
     if (!cyRef.current || !isInitialized) return
