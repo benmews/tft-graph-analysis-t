@@ -50,22 +50,23 @@ export function GraphVisualization({
             color: '#ffffff',
             'text-valign': 'center',
             'text-halign': 'center',
-            'font-size': '11px',
+            'font-size': '12px',
             'font-family': 'Space Grotesk, sans-serif',
-            'font-weight': 400,
-            width: '70px',
-            height: '70px',
+            'font-weight': 500,
+            width: '85px',
+            height: '85px',
             'border-width': '2px',
-            'border-color': 'rgba(255, 255, 255, 0.2)',
-            'text-outline-width': '0px',
+            'border-color': 'rgba(255, 255, 255, 0.3)',
+            'text-outline-width': '2px',
+            'text-outline-color': '#000000',
             'text-wrap': 'wrap',
-            'text-max-width': '60px',
+            'text-max-width': '75px',
           },
         },
         {
           selector: 'node[type="champion"]',
           style: {
-            'background-color': 'oklch(0.30 0.05 240)',
+            'background-color': 'oklch(0.35 0.08 250)',
             shape: 'roundrectangle',
           },
         },
@@ -73,28 +74,28 @@ export function GraphVisualization({
           selector: 'node[type="trait"]',
           style: {
             shape: 'ellipse',
-            width: '80px',
-            height: '80px',
+            width: '90px',
+            height: '90px',
           },
         },
         {
           selector: 'node.selected',
           style: {
-            'border-width': '3px',
+            'border-width': '4px',
             'border-color': 'oklch(0.75 0.15 200)',
           },
         },
         {
           selector: 'node.expanded',
           style: {
-            'border-width': '3px',
+            'border-width': '4px',
             'border-color': 'oklch(0.70 0.20 45)',
           },
         },
         {
           selector: 'node:hover',
           style: {
-            'border-width': '3px',
+            'border-width': '4px',
             'border-color': 'oklch(0.70 0.20 45)',
           },
         },
@@ -162,7 +163,10 @@ export function GraphVisualization({
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current)
       }
-      cy.destroy()
+      if (cy && !cy.destroyed()) {
+        cy.destroy()
+      }
+      cyRef.current = null
     }
   }, [handleNodeHover])
 
