@@ -147,23 +147,23 @@ function App() {
               </SelectContent>
             </Select>
 
-            <div className="flex items-center gap-2 px-4 py-2 bg-card rounded-lg border border-border">
-              <span className="text-sm text-muted-foreground">Bipartite</span>
-              <Switch 
-                checked={mode === 'traits-as-edges'} 
-                onCheckedChange={handleModeToggle}
-              />
-              <span className="text-sm text-muted-foreground">Trait Edges</span>
-            </div>
+            <Button 
+              onClick={() => handleModeToggle(mode === 'bipartite')}
+              variant="outline"
+              className="gap-2"
+            >
+              <ArrowsLeftRight />
+              {mode === 'bipartite' ? 'Bipartite' : 'Trait Edges'}
+            </Button>
 
-            <div className="flex items-center gap-2 px-4 py-2 bg-card rounded-lg border border-border">
-              <span className="text-sm text-muted-foreground">Hierarchical</span>
-              <Switch 
-                checked={layoutMode === 'spring'} 
-                onCheckedChange={handleLayoutToggle}
-              />
-              <span className="text-sm text-muted-foreground">Spring</span>
-            </div>
+            <Button 
+              onClick={() => handleLayoutToggle(layoutMode === 'hierarchical')}
+              variant="outline"
+              className="gap-2"
+            >
+              <Graph weight="duotone" />
+              {layoutMode === 'hierarchical' ? 'Hierarchical' : 'Spring'}
+            </Button>
             
             <div className="flex gap-2">
               <Button 
