@@ -235,7 +235,7 @@ export function GraphVisualization({
           ? {
               name: 'breadthfirst',
               directed: false,
-              spacingFactor: 2.0,
+              spacingFactor: 1.0,
               animate: true,
               animationDuration: 400,
             }
@@ -243,8 +243,8 @@ export function GraphVisualization({
               name: 'cose',
               animate: true,
               animationDuration: 400,
-              nodeRepulsion: 4000,
-              idealEdgeLength: 250,
+              nodeRepulsion: 2000,
+              idealEdgeLength: 120,
               edgeElasticity: 100,
               nestingFactor: 1.2,
               gravity: 1,
