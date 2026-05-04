@@ -90,17 +90,19 @@ export function GraphVisualization({
         {
           selector: 'node.selected',
           style: {
-            width: '100px',
-            height: '100px',
+            width: '170px',
+            height: '170px',
             'border-width': '4px',
             'border-color': '#f4b740',
+            'text-max-width': '155px',
           },
         },
         {
           selector: 'node[type="trait"].selected',
           style: {
-            width: '105px',
-            height: '105px',
+            width: '180px',
+            height: '180px',
+            'text-max-width': '165px',
           },
         },
         {
