@@ -70,6 +70,44 @@ function App() {
       const hops = mode === 'traits-as-edges' ? 1 : 2
       const neighbors = findNeighbors(nodeId, allEdges, hops)
       neighbors.forEach((n) => visible.add(n))
+      
+      if (mode === 'bipartite') {
+        const revealedChampions = Array.from(neighbors).filter((n) => n.startsWith('champion-'))
+        
+        revealedChampions.forEach((champ1) => {
+          revealedChampions.forEach((champ2) => {
+            if (champ1 !== champ2) {
+              allEdges.forEach((edge) => {
+                if (
+                  (edge.source === champ1 && edge.target === champ2) ||
+                  (edge.source === champ2 && edge.target === champ1)
+                ) {
+                  return
+                }
+                
+                if (
+                  (edge.source === champ1 && edge.target.startsWith('trait-')) ||
+                  (edge.target === champ1 && edge.source.startsWith('trait-'))
+                ) {
+                  const traitNode = edge.source.startsWith('trait-') ? edge.source : edge.target
+                  
+                  const hasConnection = allEdges.some((e) => 
+                    (e.source === champ2 && e.target === traitNode) ||
+                    (e.target === champ2 && e.source === traitNode)
+                  )
+                  
+                  if (hasConnection && !visible.has(traitNode)) {
+                    const isDirectNeighbor = neighbors.has(traitNode)
+                    if (!isDirectNeighbor) {
+                      visible.add(traitNode)
+                    }
+                  }
+                }
+              })
+            }
+          })
+        })
+      }
     })
 
     expandedNodes.forEach((nodeId) => {
