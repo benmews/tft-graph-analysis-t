@@ -112,8 +112,30 @@ function App() {
 
     expandedNodes.forEach((nodeId) => {
       visible.add(nodeId)
-      const neighbors = findNeighbors(nodeId, allEdges, 1)
-      neighbors.forEach((n) => visible.add(n))
+      
+      if (nodeId.startsWith('trait-')) {
+        const neighbors = findNeighbors(nodeId, allEdges, 1)
+        neighbors.forEach((n) => {
+          if (n.startsWith('champion-')) {
+            visible.add(n)
+          }
+        })
+      } else if (nodeId.startsWith('champion-')) {
+        const directNeighbors = findNeighbors(nodeId, allEdges, 1)
+        directNeighbors.forEach((n) => visible.add(n))
+        
+        if (mode === 'bipartite') {
+          const traitNeighbors = Array.from(directNeighbors).filter((n) => n.startsWith('trait-'))
+          traitNeighbors.forEach((traitId) => {
+            const championsOfTrait = findNeighbors(traitId, allEdges, 1)
+            championsOfTrait.forEach((champId) => {
+              if (champId.startsWith('champion-')) {
+                visible.add(champId)
+              }
+            })
+          })
+        }
+      }
     })
 
     return allNodes.filter((node) => visible.has(node.id))
