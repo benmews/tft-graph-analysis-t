@@ -66,7 +66,7 @@ export function GraphVisualization({
             width: '85px',
             height: '85px',
             'border-width': '3px',
-            'border-color': '#000000',
+            'border-color': '#535863',
             'text-outline-width': '2px',
             'text-outline-color': '#000000',
             'text-wrap': 'wrap',
