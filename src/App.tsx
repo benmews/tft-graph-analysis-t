@@ -14,11 +14,11 @@ import {
   SelectValue,
 } from './components/ui/select'
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from './components/ui/sheet'
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from './components/ui/drawer'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +28,6 @@ import {
 } from './components/ui/dropdown-menu'
 import {
   ArrowsLeftRight,
-  Sparkle,
   Graph,
   Plus,
   ArrowsClockwise,
@@ -401,7 +400,13 @@ function App() {
                 type="button"
                 variant={controlsOpen ? 'default' : 'outline'}
                 className="coarse:min-h-11 shrink-0 gap-1.5 px-3"
-                onClick={() => setControlsOpen((o) => !o)}
+                onClick={() => {
+                  if (controlsOpen) {
+                    setControlsOpen(false)
+                  } else {
+                    queueMicrotask(() => setControlsOpen(true))
+                  }
+                }}
                 aria-expanded={controlsOpen}
                 aria-controls="mobile-controls-sheet"
               >
@@ -501,21 +506,20 @@ function App() {
         <ControlsPanel {...controlsProps} />
       </aside>
 
-      <Sheet open={controlsOpen} onOpenChange={setControlsOpen} modal>
-        <SheetContent
+      <Drawer open={controlsOpen} onOpenChange={setControlsOpen} shouldScaleBackground={false}>
+        <DrawerContent
           id="mobile-controls-sheet"
-          side="bottom"
           aria-labelledby="mobile-controls-title"
-          className="flex max-h-[92dvh] flex-col gap-0 rounded-t-2xl border-t p-0 pb-[max(1rem,env(safe-area-inset-bottom))]"
+          className="max-h-[92dvh] gap-0 border-t p-0 pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
-          <SheetHeader className="shrink-0 border-b px-4 py-3 text-left">
-            <SheetTitle id="mobile-controls-title">Controls</SheetTitle>
-          </SheetHeader>
-          <div className="max-h-[min(78dvh,calc(92dvh-3.5rem))] overflow-y-auto overscroll-contain px-4 pt-4 pb-6">
+          <DrawerHeader className="shrink-0 border-b px-4 py-3 text-left">
+            <DrawerTitle id="mobile-controls-title">Controls</DrawerTitle>
+          </DrawerHeader>
+          <div className="max-h-[min(78dvh,calc(92dvh-4rem))] overflow-y-auto overscroll-contain px-4 pt-4 pb-6">
             <ControlsPanel {...controlsProps} />
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }
