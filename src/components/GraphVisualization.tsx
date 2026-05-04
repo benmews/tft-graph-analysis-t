@@ -32,6 +32,7 @@ export function GraphVisualization({
   const onNodeClickRef = useRef(onNodeClick)
   const previousNodesRef = useRef<string>('')
   const previousEdgesRef = useRef<string>('')
+  const previousLayoutModeRef = useRef<LayoutMode>(layoutMode)
 
   useEffect(() => {
     onNodeHoverRef.current = onNodeHover
@@ -202,8 +203,10 @@ export function GraphVisualization({
     const structureChanged = 
       previousNodesRef.current !== currentNodesKey || 
       previousEdgesRef.current !== currentEdgesKey
+    
+    const layoutModeChanged = previousLayoutModeRef.current !== layoutMode
 
-    if (structureChanged) {
+    if (structureChanged || layoutModeChanged) {
       cy.elements().remove()
 
       const cyNodes = nodes.map((node) => ({
@@ -263,6 +266,7 @@ export function GraphVisualization({
 
       previousNodesRef.current = currentNodesKey
       previousEdgesRef.current = currentEdgesKey
+      previousLayoutModeRef.current = layoutMode
     } else {
       nodes.forEach((node) => {
         const cyNode = cy.getElementById(node.id)
