@@ -88,8 +88,17 @@ function App() {
     })
   }
 
-  const handleReset = () => {
+  const handleResetExpansions = () => {
     setExpandedNodes([])
+  }
+
+  const handleResetAll = () => {
+    setExpandedNodes([])
+    const defaultChampions = 
+      currentSet.id === 'set13' ? ['powder', 'vander'] : 
+      currentSet.id === 'set14' ? ['ahri', 'ashe'] : 
+      ['ashe', 'ahri']
+    setSelectedChampions(defaultChampions)
   }
 
   const handleSetChange = (setId: string) => {
@@ -145,14 +154,24 @@ function App() {
               <span className="text-sm text-muted-foreground">Trait Edges</span>
             </div>
             
-            <Button 
-              onClick={handleReset}
-              variant="outline"
-              className="gap-2"
-            >
-              <ArrowsClockwise />
-              Reset
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleResetExpansions}
+                variant="outline"
+                className="gap-2"
+              >
+                <ArrowsClockwise />
+                Reset Expansions
+              </Button>
+              <Button 
+                onClick={handleResetAll}
+                variant="outline"
+                className="gap-2"
+              >
+                <ArrowsClockwise weight="bold" />
+                Reset All
+              </Button>
+            </div>
           </div>
         </div>
 
