@@ -114,6 +114,7 @@ export function GraphVisualization({
           style: {
             'border-width': '8px',
             'border-color': '#000000',
+            'border-opacity': 1,
             'border-style': 'dotted',
           },
         },
