@@ -52,7 +52,7 @@ function App() {
       const nodeId = `champion-${champId}`
       visible.add(nodeId)
       
-      const hops = layoutMode === 'spring' ? 1 : 2
+      const hops = (mode === 'traits-as-edges' || layoutMode === 'spring') ? 1 : 2
       const neighbors = findNeighbors(nodeId, allEdges, hops)
       neighbors.forEach((n) => visible.add(n))
     })
@@ -64,7 +64,7 @@ function App() {
     })
 
     return allNodes.filter((node) => visible.has(node.id))
-  }, [allNodes, allEdges, selectedChampions, expandedNodes, layoutMode])
+  }, [allNodes, allEdges, selectedChampions, expandedNodes, layoutMode, mode])
 
   const visibleEdges = useMemo(() => {
     const visibleNodeIds = new Set(visibleNodes.map((n) => n.id))
