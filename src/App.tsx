@@ -151,18 +151,25 @@ function App() {
   const handleNodeClick = (nodeId: string) => {
     if (nodeId.startsWith('champion-')) {
       const championId = nodeId.replace('champion-', '')
-      if (selectedChampions.includes(championId)) {
+      const isSelected = selectedChampions.includes(championId)
+      const isExpanded = expandedNodes.includes(nodeId)
+      
+      if (isSelected) {
         setSelectedChampions((prev) => prev.filter((id) => id !== championId))
-        return
+      } else if (isExpanded) {
+        setExpandedNodes((prev) => prev.filter((id) => id !== nodeId))
+        setSelectedChampions((prev) => [...prev, championId])
+      } else {
+        setExpandedNodes((prev) => [...prev, nodeId])
       }
+    } else {
+      setExpandedNodes((prev) => {
+        if (prev.includes(nodeId)) {
+          return prev.filter((id) => id !== nodeId)
+        }
+        return [...prev, nodeId]
+      })
     }
-    
-    setExpandedNodes((prev) => {
-      if (prev.includes(nodeId)) {
-        return prev.filter((id) => id !== nodeId)
-      }
-      return [...prev, nodeId]
-    })
   }
 
   const handleResetExpansions = () => {
