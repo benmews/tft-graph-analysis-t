@@ -339,7 +339,7 @@ export function GraphVisualization({
   return (
     <div
       ref={containerRef}
-      className="w-full h-full bg-background rounded-lg border-2 border-border"
+      className="h-full w-full touch-none rounded-lg border-2 border-border bg-background"
     />
   )
 }
