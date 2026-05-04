@@ -93,8 +93,9 @@ export function GraphVisualization({
           style: {
             width: '170px',
             height: '170px',
-            'border-width': '4px',
+            'border-width': '6px',
             'border-color': '#f4b740',
+            'border-style': 'solid',
             'text-max-width': '155px',
           },
         },
@@ -109,9 +110,9 @@ export function GraphVisualization({
         {
           selector: 'node.expanded',
           style: {
-            'border-width': '4px',
-            'border-color': '#000000',
-            'border-style': 'dashed',
+            'border-width': '5px',
+            'border-color': '#ffffff',
+            'border-style': 'dotted',
           },
         },
         {
