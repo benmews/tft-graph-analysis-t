@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import cytoscape, { Core, NodeSingular } from 'cytoscape'
 import { GraphNode, GraphEdge, VisualizationMode } from '@/lib/types'
+import { oklchToHex } from '@/lib/color-utils'
 
 interface GraphVisualizationProps {
   nodes: GraphNode[]
@@ -101,7 +102,7 @@ export function GraphVisualization({
           selector: 'node.expanded',
           style: {
             'border-width': '3px',
-            'border-color': 'oklch(0.70 0.20 45)',
+            'border-color': '#f4b740',
             'border-style': 'dashed',
           },
         },
@@ -109,7 +110,7 @@ export function GraphVisualization({
           selector: 'node:hover',
           style: {
             'border-width': '4px',
-            'border-color': 'oklch(0.70 0.20 45)',
+            'border-color': '#f4b740',
           },
         },
         {
@@ -122,7 +123,7 @@ export function GraphVisualization({
           selector: 'edge',
           style: {
             width: 2,
-            'line-color': 'oklch(0.40 0.03 240)',
+            'line-color': '#535863',
             'curve-style': 'bezier',
             opacity: 0.4,
           },
@@ -131,7 +132,7 @@ export function GraphVisualization({
           selector: 'edge.highlighted',
           style: {
             width: 3,
-            'line-color': 'oklch(0.75 0.15 200)',
+            'line-color': '#7db8c9',
             opacity: 0.8,
           },
         },
@@ -203,7 +204,7 @@ export function GraphVisualization({
           id: node.id,
           label: node.label,
           type: node.type,
-          color: node.color || 'oklch(0.35 0.02 240)',
+          color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
           cost: node.cost,
         },
         classes: [
