@@ -127,7 +127,7 @@ function App() {
   return (
     <div className="flex h-screen bg-background text-foreground">
       <div className="flex-1 p-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
             <Graph size={32} className="text-accent" weight="duotone" />
             <h1 className="text-3xl font-bold tracking-tight">TFT Graph Analysis</h1>
@@ -207,7 +207,7 @@ function App() {
           />
         </div>
 
-        <Card className="bg-card/50 backdrop-blur">
+        <Card className="bg-card/50 backdrop-blur relative z-10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
