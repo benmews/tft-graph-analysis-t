@@ -73,6 +73,14 @@ function App() {
   }, [visibleNodes, allEdges])
 
   const handleNodeClick = (nodeId: string) => {
+    if (nodeId.startsWith('champion-')) {
+      const championId = nodeId.replace('champion-', '')
+      if (selectedChampions.includes(championId)) {
+        setSelectedChampions((prev) => prev.filter((id) => id !== championId))
+        return
+      }
+    }
+    
     setExpandedNodes((prev) => {
       if (prev.includes(nodeId)) {
         return prev.filter((id) => id !== nodeId)
