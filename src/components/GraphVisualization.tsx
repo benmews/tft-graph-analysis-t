@@ -25,15 +25,22 @@ export function GraphVisualization({
   const cyRef = useRef<Core | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const hoverTimeoutRef = useRef<number | null>(null)
+  const onNodeHoverRef = useRef(onNodeHover)
+  const onNodeClickRef = useRef(onNodeClick)
+
+  useEffect(() => {
+    onNodeHoverRef.current = onNodeHover
+    onNodeClickRef.current = onNodeClick
+  })
 
   const handleNodeHover = useCallback((nodeId: string | null) => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current)
     }
     hoverTimeoutRef.current = window.setTimeout(() => {
-      onNodeHover?.(nodeId)
+      onNodeHoverRef.current?.(nodeId)
     }, 50)
-  }, [onNodeHover])
+  }, [])
 
   useEffect(() => {
     if (!containerRef.current || isInitialized) return
@@ -144,7 +151,7 @@ export function GraphVisualization({
 
     cy.on('tap', 'node', (evt) => {
       const node = evt.target
-      onNodeClick?.(node.id())
+      onNodeClickRef.current?.(node.id())
     })
 
     cy.on('mouseover', 'node', (evt) => {
