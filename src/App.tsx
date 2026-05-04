@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { GraphVisualization } from './components/GraphVisualization'
-import { tftSets, set13, set14 } from './lib/tft-data'
+import { tftSets, set13, set14, set17 } from './lib/tft-data'
 import { generateBipartiteGraph, generateTraitEdgeGraph, findNeighbors } from './lib/graph-utils'
 import { VisualizationMode, GraphNode, GraphEdge, TFTSet } from './lib/types'
 import { Button } from './components/ui/button'
@@ -26,9 +26,9 @@ import {
 } from '@phosphor-icons/react'
 
 function App() {
-  const [currentSet, setCurrentSet] = useState<TFTSet>(set14)
+  const [currentSet, setCurrentSet] = useState<TFTSet>(set17)
   const [mode, setMode] = useState<VisualizationMode>('bipartite')
-  const [selectedChampions, setSelectedChampions] = useState<string[]>(['ahri', 'ashe'])
+  const [selectedChampions, setSelectedChampions] = useState<string[]>(['ashe', 'ahri'])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
@@ -81,7 +81,10 @@ function App() {
   }
 
   const handleReset = () => {
-    const defaultChampions = currentSet.id === 'set13' ? ['powder', 'vander'] : ['ahri', 'ashe']
+    const defaultChampions = 
+      currentSet.id === 'set13' ? ['powder', 'vander'] : 
+      currentSet.id === 'set14' ? ['ahri', 'ashe'] : 
+      ['ashe', 'ahri']
     setSelectedChampions(defaultChampions)
     setExpandedNodes([])
   }
@@ -90,7 +93,10 @@ function App() {
     const newSet = tftSets.find((s) => s.id === setId)
     if (newSet) {
       setCurrentSet(newSet)
-      const defaultChampions = setId === 'set13' ? ['powder', 'vander'] : ['ahri', 'ashe']
+      const defaultChampions = 
+        setId === 'set13' ? ['powder', 'vander'] : 
+        setId === 'set14' ? ['ahri', 'ashe'] : 
+        ['ashe', 'ahri']
       setSelectedChampions(defaultChampions)
       setExpandedNodes([])
     }
