@@ -7,15 +7,17 @@ import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin";
 import { resolve } from 'path'
 
 const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
+const isCI = process.env.CI === 'true'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: isCI ? '/tft-graph-analysis-t/' : '/',
   plugins: [
     react(),
     tailwindcss(),
     // DO NOT REMOVE
-    createIconImportProxy() as PluginOption,
-    sparkPlugin() as PluginOption,
+    ...(!isCI ? [createIconImportProxy() as PluginOption] : []),
+    ...(!isCI ? [sparkPlugin() as PluginOption] : []),
   ],
   resolve: {
     alias: {
