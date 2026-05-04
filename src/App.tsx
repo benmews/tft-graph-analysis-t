@@ -97,6 +97,11 @@ function App() {
     setSelectedChampions([])
   }
 
+  const handleExpandAll = () => {
+    const allVisibleNodeIds = visibleNodes.map((node) => node.id)
+    setExpandedNodes(allVisibleNodeIds)
+  }
+
   const handleSetChange = (setId: string) => {
     const newSet = tftSets.find((s) => s.id === setId)
     if (newSet) {
@@ -147,6 +152,14 @@ function App() {
             </div>
             
             <div className="flex gap-2">
+              <Button 
+                onClick={handleExpandAll}
+                variant="outline"
+                className="gap-2"
+              >
+                <Plus weight="bold" />
+                Expand All Nodes
+              </Button>
               <Button 
                 onClick={handleResetExpansions}
                 variant="outline"
