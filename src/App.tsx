@@ -399,9 +399,11 @@ function App() {
               </DropdownMenu>
               <Button
                 type="button"
-                variant="default"
+                variant={controlsOpen ? 'default' : 'outline'}
                 className="coarse:min-h-11 shrink-0 gap-1.5 px-3"
-                onClick={() => setControlsOpen(true)}
+                onClick={() => setControlsOpen((o) => !o)}
+                aria-expanded={controlsOpen}
+                aria-controls="mobile-controls-sheet"
               >
                 <SlidersHorizontal className="size-5" />
                 Controls
@@ -499,15 +501,17 @@ function App() {
         <ControlsPanel {...controlsProps} />
       </aside>
 
-      <Sheet open={controlsOpen} onOpenChange={setControlsOpen}>
+      <Sheet open={controlsOpen} onOpenChange={setControlsOpen} modal>
         <SheetContent
+          id="mobile-controls-sheet"
           side="bottom"
-          className="flex max-h-[88dvh] flex-col gap-0 overflow-hidden rounded-t-2xl border-t p-0 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
+          aria-labelledby="mobile-controls-title"
+          className="flex max-h-[92dvh] flex-col gap-0 rounded-t-2xl border-t p-0 pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
           <SheetHeader className="shrink-0 border-b px-4 py-3 text-left">
-            <SheetTitle>Controls</SheetTitle>
+            <SheetTitle id="mobile-controls-title">Controls</SheetTitle>
           </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4">
+          <div className="max-h-[min(78dvh,calc(92dvh-3.5rem))] overflow-y-auto overscroll-contain px-4 pt-4 pb-6">
             <ControlsPanel {...controlsProps} />
           </div>
         </SheetContent>
