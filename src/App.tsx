@@ -9,6 +9,8 @@ import { Switch } from './components/ui/switch'
 import { Badge } from './components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Input } from './components/ui/input'
+import { Checkbox } from './components/ui/checkbox'
+import { Label } from './components/ui/label'
 import { 
   Select,
   SelectContent,
@@ -43,6 +45,7 @@ function App() {
   const [fixedLayout, setFixedLayout] = useState(true)
   const [sortBy, setSortBy] = useState<'alphabetical' | 'cost'>('alphabetical')
   const [filterText, setFilterText] = useState('')
+  const [enabledCosts, setEnabledCosts] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]))
 
   const { nodes: allNodes, edges: allEdges } = useMemo(() => {
     if (mode === 'bipartite') {
@@ -53,12 +56,19 @@ function App() {
   }, [mode, selectedChampions, currentSet])
 
   const visibleNodes = useMemo(() => {
+    const filteredNodes = allNodes.filter((node) => {
+      if (node.type === 'champion' && node.cost !== undefined) {
+        return enabledCosts.has(node.cost)
+      }
+      return true
+    })
+
     if (fixedLayout && expandedNodes.length === 0 && selectedChampions.length === 0) {
-      return allNodes
+      return filteredNodes
     }
     
     if (expandedNodes.length === 0 && selectedChampions.length === 0) {
-      return allNodes.slice(0, 15)
+      return filteredNodes.slice(0, 15)
     }
 
     const visible = new Set<string>()
@@ -138,8 +148,8 @@ function App() {
       }
     })
 
-    return allNodes.filter((node) => visible.has(node.id))
-  }, [allNodes, allEdges, selectedChampions, expandedNodes, layoutMode, mode, fixedLayout])
+    return filteredNodes.filter((node) => visible.has(node.id))
+  }, [allNodes, allEdges, selectedChampions, expandedNodes, layoutMode, mode, fixedLayout, enabledCosts])
 
   const visibleEdges = useMemo(() => {
     const visibleNodeIds = new Set(visibleNodes.map((n) => n.id))
@@ -179,6 +189,18 @@ function App() {
   const handleResetAll = () => {
     setExpandedNodes([])
     setSelectedChampions([])
+  }
+
+  const handleCostToggle = (cost: number) => {
+    setEnabledCosts((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(cost)) {
+        newSet.delete(cost)
+      } else {
+        newSet.add(cost)
+      }
+      return newSet
+    })
   }
 
   const handleExpandAll = () => {
@@ -354,6 +376,31 @@ function App() {
             </TabsList>
             
             <TabsContent value="explore" className="space-y-4 mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Filter by Cost</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-4">
+                    {[1, 2, 3, 4, 5].map((cost) => (
+                      <div key={cost} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`cost-${cost}`}
+                          checked={enabledCosts.has(cost)}
+                          onCheckedChange={() => handleCostToggle(cost)}
+                        />
+                        <Label
+                          htmlFor={`cost-${cost}`}
+                          className="text-sm font-medium cursor-pointer"
+                        >
+                          {cost}g
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Selected Champions</CardTitle>
