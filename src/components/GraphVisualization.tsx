@@ -89,7 +89,7 @@ export function GraphVisualization({
           },
         },
         {
-          selector: 'node.selected',
+          selector: 'node.pinned',
           style: {
             width: '170px',
             height: '170px',
@@ -100,7 +100,7 @@ export function GraphVisualization({
           },
         },
         {
-          selector: 'node[type="trait"].selected',
+          selector: 'node[type="trait"].pinned',
           style: {
             width: '180px',
             height: '180px',
@@ -210,8 +210,8 @@ export function GraphVisualization({
           cost: node.cost,
         },
         classes: [
-          selectedNodes.includes(node.id) ? 'selected' : '',
-          expandedNodes.includes(node.id) ? 'expanded' : '',
+          selectedNodes.includes(node.id) ? 'pinned' : '',
+          expandedNodes.includes(node.id) && !selectedNodes.includes(node.id) ? 'expanded' : '',
         ]
           .filter(Boolean)
           .join(' '),
@@ -263,8 +263,8 @@ export function GraphVisualization({
         const cyNode = cy.getElementById(node.id)
         if (cyNode.length > 0) {
           const classes = [
-            selectedNodes.includes(node.id) ? 'selected' : '',
-            expandedNodes.includes(node.id) ? 'expanded' : '',
+            selectedNodes.includes(node.id) ? 'pinned' : '',
+            expandedNodes.includes(node.id) && !selectedNodes.includes(node.id) ? 'expanded' : '',
           ]
             .filter(Boolean)
             .join(' ')
