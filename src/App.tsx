@@ -89,11 +89,6 @@ function App() {
   }
 
   const handleReset = () => {
-    const defaultChampions = 
-      currentSet.id === 'set13' ? ['powder', 'vander'] : 
-      currentSet.id === 'set14' ? ['ahri', 'ashe'] : 
-      ['ashe', 'ahri']
-    setSelectedChampions(defaultChampions)
     setExpandedNodes([])
   }
 
