@@ -1,16 +1,45 @@
 import { TFTSet, GraphNode, GraphEdge, VisualizationMode, Champion, Trait } from './types'
 
-const championCostColors: Record<number, string> = {
-  1: 'oklch(0.60 0.15 180)',
-  2: 'oklch(0.65 0.18 140)',
-  3: 'oklch(0.58 0.20 260)',
-  4: 'oklch(0.60 0.22 320)',
-  5: 'oklch(0.65 0.20 40)',
-  6: 'oklch(0.70 0.18 60)',
+function parseOklch(oklchString: string): { L: number; C: number; H: number } {
+  const match = oklchString.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/)
+  if (!match) return { L: 0.5, C: 0.15, H: 200 }
+  return {
+    L: parseFloat(match[1]),
+    C: parseFloat(match[2]),
+    H: parseFloat(match[3]),
+  }
 }
 
-function getChampionColor(cost: number): string {
-  return championCostColors[cost] || 'oklch(0.50 0.15 200)'
+function mixOklchColors(colors: string[]): string {
+  if (colors.length === 0) return 'oklch(0.50 0.15 200)'
+  if (colors.length === 1) return colors[0]
+
+  const parsed = colors.map(parseOklch)
+  
+  const avgL = parsed.reduce((sum, c) => sum + c.L, 0) / parsed.length
+  const avgC = parsed.reduce((sum, c) => sum + c.C, 0) / parsed.length
+  
+  let sinSum = 0
+  let cosSum = 0
+  parsed.forEach(c => {
+    const hueRad = (c.H * Math.PI) / 180
+    sinSum += Math.sin(hueRad)
+    cosSum += Math.cos(hueRad)
+  })
+  
+  const avgHueRad = Math.atan2(sinSum / parsed.length, cosSum / parsed.length)
+  let avgH = (avgHueRad * 180) / Math.PI
+  if (avgH < 0) avgH += 360
+  
+  return `oklch(${avgL.toFixed(2)} ${avgC.toFixed(2)} ${avgH.toFixed(0)})`
+}
+
+function getChampionColor(champion: Champion, tftSet: TFTSet): string {
+  const traitColors = champion.traits
+    .map(traitId => tftSet.traits.find(t => t.id === traitId)?.color)
+    .filter((color): color is string => color !== undefined)
+  
+  return mixOklchColors(traitColors)
 }
 
 export function generateBipartiteGraph(
@@ -35,7 +64,7 @@ export function generateBipartiteGraph(
       type: 'champion',
       label: champion.name,
       cost: champion.cost,
-      color: getChampionColor(champion.cost),
+      color: getChampionColor(champion, tftSet),
     })
 
     champion.traits.forEach((traitId) => {
@@ -63,7 +92,7 @@ export function generateTraitEdgeGraph(
       type: 'champion',
       label: champion.name,
       cost: champion.cost,
-      color: getChampionColor(champion.cost),
+      color: getChampionColor(champion, tftSet),
     })
   })
 

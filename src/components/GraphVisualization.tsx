@@ -65,8 +65,8 @@ export function GraphVisualization({
             'font-weight': 500,
             width: '85px',
             height: '85px',
-            'border-width': '2px',
-            'border-color': 'rgba(255, 255, 255, 0.3)',
+            'border-width': '3px',
+            'border-color': '#000000',
             'text-outline-width': '2px',
             'text-outline-color': '#000000',
             'text-wrap': 'wrap',
@@ -90,18 +90,23 @@ export function GraphVisualization({
         {
           selector: 'node.selected',
           style: {
-            'border-width': '5px',
-            'border-color': '#ffffff',
-            'underlay-opacity': 0.4,
-            'underlay-color': '#ffffff',
-            'underlay-padding': '8px',
-            'underlay-shape': 'round-rectangle',
+            width: '100px',
+            height: '100px',
+            'border-width': '4px',
+            'border-color': '#f4b740',
+          },
+        },
+        {
+          selector: 'node[type="trait"].selected',
+          style: {
+            width: '105px',
+            height: '105px',
           },
         },
         {
           selector: 'node.expanded',
           style: {
-            'border-width': '3px',
+            'border-width': '4px',
             'border-color': '#f4b740',
             'border-style': 'dashed',
           },
