@@ -90,15 +90,26 @@ export function GraphVisualization({
         {
           selector: 'node.selected',
           style: {
-            'border-width': '4px',
+            'border-width': '5px',
             'border-color': 'oklch(0.75 0.15 200)',
+            'underlay-opacity': 0.5,
+            'underlay-color': 'oklch(0.75 0.15 200)',
+            'underlay-padding': '8px',
+            'underlay-shape': 'round-rectangle',
+          },
+        },
+        {
+          selector: 'node[type="champion"].selected',
+          style: {
+            'background-color': 'oklch(0.45 0.12 230)',
           },
         },
         {
           selector: 'node.expanded',
           style: {
-            'border-width': '4px',
+            'border-width': '3px',
             'border-color': 'oklch(0.70 0.20 45)',
+            'border-style': 'dashed',
           },
         },
         {

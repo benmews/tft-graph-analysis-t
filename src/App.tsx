@@ -30,6 +30,7 @@ function App() {
   const [mode, setMode] = useState<VisualizationMode>('bipartite')
   const [selectedChampions, setSelectedChampions] = useState<string[]>(['ashe', 'ahri'])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
   const { nodes: allNodes, edges: allEdges } = useMemo(() => {
@@ -78,6 +79,13 @@ function App() {
       }
       return [...prev, nodeId]
     })
+    
+    setSelectedNodes((prev) => {
+      if (prev.includes(nodeId)) {
+        return prev.filter((id) => id !== nodeId)
+      }
+      return [...prev, nodeId]
+    })
   }
 
   const handleReset = () => {
@@ -87,6 +95,7 @@ function App() {
       ['ashe', 'ahri']
     setSelectedChampions(defaultChampions)
     setExpandedNodes([])
+    setSelectedNodes([])
   }
 
   const handleSetChange = (setId: string) => {
@@ -99,6 +108,7 @@ function App() {
         ['ashe', 'ahri']
       setSelectedChampions(defaultChampions)
       setExpandedNodes([])
+      setSelectedNodes([])
     }
   }
 
@@ -160,7 +170,10 @@ function App() {
             mode={mode}
             onNodeClick={handleNodeClick}
             onNodeHover={setHoveredNode}
-            selectedNodes={selectedChampions.map((id) => `champion-${id}`)}
+            selectedNodes={[
+              ...selectedChampions.map((id) => `champion-${id}`),
+              ...selectedNodes
+            ]}
             expandedNodes={expandedNodes}
           />
         </div>
