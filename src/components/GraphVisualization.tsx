@@ -100,11 +100,15 @@ export function GraphVisualization({
           style: {
             width: '120px',
             height: '120px',
-            'border-width': '8px',
-            'border-color': '#f4b740',
+            'border-width': '14px',
+            'border-color': '#FFD700',
             'border-style': 'solid',
+            'border-opacity': 1,
             'text-max-width': '110px',
             'font-size': '16px',
+            'overlay-color': '#FFD700',
+            'overlay-opacity': 0.3,
+            'overlay-padding': '8px',
           },
         },
         {
