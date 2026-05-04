@@ -28,7 +28,7 @@ import {
 function App() {
   const [currentSet, setCurrentSet] = useState<TFTSet>(set17)
   const [mode, setMode] = useState<VisualizationMode>('bipartite')
-  const [selectedChampions, setSelectedChampions] = useState<string[]>(['ashe', 'ahri'])
+  const [selectedChampions, setSelectedChampions] = useState<string[]>([])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
@@ -94,22 +94,14 @@ function App() {
 
   const handleResetAll = () => {
     setExpandedNodes([])
-    const defaultChampions = 
-      currentSet.id === 'set13' ? ['powder', 'vander'] : 
-      currentSet.id === 'set14' ? ['ahri', 'ashe'] : 
-      ['ashe', 'ahri']
-    setSelectedChampions(defaultChampions)
+    setSelectedChampions([])
   }
 
   const handleSetChange = (setId: string) => {
     const newSet = tftSets.find((s) => s.id === setId)
     if (newSet) {
       setCurrentSet(newSet)
-      const defaultChampions = 
-        setId === 'set13' ? ['powder', 'vander'] : 
-        setId === 'set14' ? ['ahri', 'ashe'] : 
-        ['ashe', 'ahri']
-      setSelectedChampions(defaultChampions)
+      setSelectedChampions([])
       setExpandedNodes([])
     }
   }
