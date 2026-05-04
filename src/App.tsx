@@ -381,17 +381,18 @@ function App() {
                   <CardTitle className="text-base">Filter by Cost</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-3">
                     {[1, 2, 3, 4, 5].map((cost) => (
                       <div key={cost} className="flex items-center gap-2">
                         <Checkbox
                           id={`cost-${cost}`}
                           checked={enabledCosts.has(cost)}
                           onCheckedChange={() => handleCostToggle(cost)}
+                          className="border-2"
                         />
                         <Label
                           htmlFor={`cost-${cost}`}
-                          className="text-sm font-medium cursor-pointer"
+                          className="text-sm font-medium cursor-pointer select-none"
                         >
                           {cost}g
                         </Label>
