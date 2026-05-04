@@ -52,7 +52,7 @@ function App() {
       const nodeId = `champion-${champId}`
       visible.add(nodeId)
       
-      const hops = (mode === 'traits-as-edges' || layoutMode === 'spring') ? 1 : 2
+      const hops = mode === 'traits-as-edges' ? 1 : 2
       const neighbors = findNeighbors(nodeId, allEdges, hops)
       neighbors.forEach((n) => visible.add(n))
     })
