@@ -100,7 +100,7 @@ export function GraphVisualization({
           style: {
             width: '120px',
             height: '120px',
-            'border-width': '4px',
+            'border-width': '8px',
             'border-color': '#f4b740',
             'border-style': 'solid',
             'text-max-width': '110px',
