@@ -36,6 +36,7 @@ export function GraphVisualization({
   const previousEdgesRef = useRef<string>('')
   const previousLayoutModeRef = useRef<LayoutMode>(layoutMode)
   const fixedPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map())
+  const savedZoomRef = useRef<{ zoom: number; pan: { x: number; y: number } } | null>(null)
 
   useEffect(() => {
     onNodeHoverRef.current = onNodeHover
@@ -214,6 +215,13 @@ export function GraphVisualization({
     const layoutModeChanged = previousLayoutModeRef.current !== layoutMode
 
     if (structureChanged || layoutModeChanged) {
+      if (structureChanged && !layoutModeChanged) {
+        savedZoomRef.current = {
+          zoom: cy.zoom(),
+          pan: cy.pan()
+        }
+      }
+
       cy.elements().remove()
 
       const cyNodes = nodes.map((node) => ({
@@ -253,7 +261,12 @@ export function GraphVisualization({
           }
         })
 
-        if (nodes.length > 0) {
+        if (savedZoomRef.current && structureChanged && !layoutModeChanged) {
+          cy.viewport({
+            zoom: savedZoomRef.current.zoom,
+            pan: savedZoomRef.current.pan
+          })
+        } else if (nodes.length > 0) {
           cy.fit(undefined, 50)
         }
       } else {
@@ -291,7 +304,14 @@ export function GraphVisualization({
           })
         }
 
-        if (nodes.length > 0) {
+        if (savedZoomRef.current && structureChanged && !layoutModeChanged) {
+          layout.on('layoutstop', () => {
+            cy.viewport({
+              zoom: savedZoomRef.current!.zoom,
+              pan: savedZoomRef.current!.pan
+            })
+          })
+        } else if (nodes.length > 0) {
           cy.fit(undefined, 50)
         }
       }
