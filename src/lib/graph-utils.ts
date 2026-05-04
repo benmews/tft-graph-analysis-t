@@ -1,5 +1,18 @@
 import { TFTSet, GraphNode, GraphEdge, VisualizationMode, Champion, Trait } from './types'
 
+const championCostColors: Record<number, string> = {
+  1: 'oklch(0.60 0.15 180)',
+  2: 'oklch(0.65 0.18 140)',
+  3: 'oklch(0.58 0.20 260)',
+  4: 'oklch(0.60 0.22 320)',
+  5: 'oklch(0.65 0.20 40)',
+  6: 'oklch(0.70 0.18 60)',
+}
+
+function getChampionColor(cost: number): string {
+  return championCostColors[cost] || 'oklch(0.50 0.15 200)'
+}
+
 export function generateBipartiteGraph(
   tftSet: TFTSet,
   selectedChampions: string[] = []
@@ -22,6 +35,7 @@ export function generateBipartiteGraph(
       type: 'champion',
       label: champion.name,
       cost: champion.cost,
+      color: getChampionColor(champion.cost),
     })
 
     champion.traits.forEach((traitId) => {
@@ -49,6 +63,7 @@ export function generateTraitEdgeGraph(
       type: 'champion',
       label: champion.name,
       cost: champion.cost,
+      color: getChampionColor(champion.cost),
     })
   })
 

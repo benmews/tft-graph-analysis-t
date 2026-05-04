@@ -75,7 +75,6 @@ export function GraphVisualization({
         {
           selector: 'node[type="champion"]',
           style: {
-            'background-color': 'oklch(0.35 0.08 250)',
             shape: 'roundrectangle',
           },
         },
