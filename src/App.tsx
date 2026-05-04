@@ -22,7 +22,8 @@ import {
   Graph,
   Plus,
   Minus,
-  ArrowsClockwise
+  ArrowsClockwise,
+  Lock
 } from '@phosphor-icons/react'
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
   const [selectedChampions, setSelectedChampions] = useState<string[]>([])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
+  const [fixedLayout, setFixedLayout] = useState(false)
 
   const { nodes: allNodes, edges: allEdges } = useMemo(() => {
     if (mode === 'bipartite') {
@@ -42,6 +44,10 @@ function App() {
   }, [mode, selectedChampions, currentSet])
 
   const visibleNodes = useMemo(() => {
+    if (fixedLayout && expandedNodes.length === 0 && selectedChampions.length === 0) {
+      return allNodes
+    }
+    
     if (expandedNodes.length === 0 && selectedChampions.length === 0) {
       return allNodes.slice(0, 15)
     }
@@ -64,7 +70,7 @@ function App() {
     })
 
     return allNodes.filter((node) => visible.has(node.id))
-  }, [allNodes, allEdges, selectedChampions, expandedNodes, layoutMode, mode])
+  }, [allNodes, allEdges, selectedChampions, expandedNodes, layoutMode, mode, fixedLayout])
 
   const visibleEdges = useMemo(() => {
     const visibleNodeIds = new Set(visibleNodes.map((n) => n.id))
@@ -165,6 +171,15 @@ function App() {
               <Graph weight="duotone" />
               {layoutMode === 'hierarchical' ? 'Hierarchical' : 'Spring'}
             </Button>
+
+            <Button 
+              onClick={() => setFixedLayout(!fixedLayout)}
+              variant={fixedLayout ? 'default' : 'outline'}
+              className="gap-2"
+            >
+              <Lock weight={fixedLayout ? 'fill' : 'regular'} />
+              Fixed Layout
+            </Button>
             
             <div className="flex gap-2">
               <Button 
@@ -205,6 +220,7 @@ function App() {
             onNodeHover={setHoveredNode}
             selectedNodes={selectedChampions.map((id) => `champion-${id}`)}
             expandedNodes={expandedNodes}
+            fixedLayout={fixedLayout}
           />
         </div>
 

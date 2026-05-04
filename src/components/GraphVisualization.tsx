@@ -12,6 +12,7 @@ interface GraphVisualizationProps {
   onNodeHover?: (nodeId: string | null) => void
   selectedNodes?: string[]
   expandedNodes?: string[]
+  fixedLayout?: boolean
 }
 
 export function GraphVisualization({
@@ -23,6 +24,7 @@ export function GraphVisualization({
   onNodeHover,
   selectedNodes = [],
   expandedNodes = [],
+  fixedLayout = false,
 }: GraphVisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
@@ -33,6 +35,7 @@ export function GraphVisualization({
   const previousNodesRef = useRef<string>('')
   const previousEdgesRef = useRef<string>('')
   const previousLayoutModeRef = useRef<LayoutMode>(layoutMode)
+  const fixedPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map())
 
   useEffect(() => {
     onNodeHoverRef.current = onNodeHover
@@ -63,18 +66,18 @@ export function GraphVisualization({
             color: '#ffffff',
             'text-valign': 'center',
             'text-halign': 'center',
-            'font-size': '32px',
+            'font-size': '14px',
             'font-family': 'Space Grotesk, sans-serif',
             'font-weight': 600,
-            width: '180px',
-            height: '180px',
+            width: '80px',
+            height: '80px',
             'border-width': '2px',
             'border-color': '#707070',
             'border-opacity': 0.2,
             'text-outline-width': '2px',
             'text-outline-color': '#000000',
             'text-wrap': 'wrap',
-            'text-max-width': '165px',
+            'text-max-width': '70px',
           },
         },
         {
@@ -87,35 +90,35 @@ export function GraphVisualization({
           selector: 'node[type="trait"]',
           style: {
             shape: 'ellipse',
-            width: '190px',
-            height: '190px',
-            'text-max-width': '175px',
+            width: '85px',
+            height: '85px',
+            'text-max-width': '75px',
           },
         },
         {
           selector: 'node.pinned',
           style: {
-            width: '300px',
-            height: '300px',
-            'border-width': '6px',
+            width: '120px',
+            height: '120px',
+            'border-width': '4px',
             'border-color': '#f4b740',
             'border-style': 'solid',
-            'text-max-width': '280px',
-            'font-size': '40px',
+            'text-max-width': '110px',
+            'font-size': '16px',
           },
         },
         {
           selector: 'node[type="trait"].pinned',
           style: {
-            width: '310px',
-            height: '310px',
-            'text-max-width': '290px',
+            width: '125px',
+            height: '125px',
+            'text-max-width': '115px',
           },
         },
         {
           selector: 'node.expanded',
           style: {
-            'border-width': '8px',
+            'border-width': '4px',
             'border-color': '#000000',
             'border-opacity': 1,
             'border-style': 'dotted',
@@ -235,33 +238,58 @@ export function GraphVisualization({
 
       cy.add([...cyNodes, ...cyEdges])
 
-      const layoutOptions =
-        layoutMode === 'spring'
-          ? {
-              name: 'cose',
-              animate: true,
-              animationDuration: 400,
-              nodeRepulsion: 2000,
-              idealEdgeLength: 120,
-              edgeElasticity: 100,
-              nestingFactor: 1.2,
-              gravity: 1,
-              numIter: 1000,
-              randomize: false,
+      if (fixedLayout && fixedPositionsRef.current.size > 0) {
+        nodes.forEach((node) => {
+          const position = fixedPositionsRef.current.get(node.id)
+          if (position) {
+            const cyNode = cy.getElementById(node.id)
+            if (cyNode.length > 0) {
+              cyNode.position(position)
             }
-          : {
-              name: 'breadthfirst',
-              directed: false,
-              spacingFactor: 1.0,
-              animate: true,
-              animationDuration: 400,
-            }
+          }
+        })
 
-      const layout = cy.layout(layoutOptions as any)
-      layout.run()
+        if (nodes.length > 0) {
+          cy.fit(undefined, 50)
+        }
+      } else {
+        const layoutOptions =
+          layoutMode === 'spring'
+            ? {
+                name: 'cose',
+                animate: true,
+                animationDuration: 400,
+                nodeRepulsion: 2000,
+                idealEdgeLength: 120,
+                edgeElasticity: 100,
+                nestingFactor: 1.2,
+                gravity: 1,
+                numIter: 1000,
+                randomize: false,
+              }
+            : {
+                name: 'breadthfirst',
+                directed: false,
+                spacingFactor: 1.0,
+                animate: true,
+                animationDuration: 400,
+              }
 
-      if (nodes.length > 0) {
-        cy.fit(undefined, 50)
+        const layout = cy.layout(layoutOptions as any)
+        layout.run()
+
+        if (fixedLayout) {
+          layout.on('layoutstop', () => {
+            cy.nodes().forEach((node) => {
+              const pos = node.position()
+              fixedPositionsRef.current.set(node.id(), { x: pos.x, y: pos.y })
+            })
+          })
+        }
+
+        if (nodes.length > 0) {
+          cy.fit(undefined, 50)
+        }
       }
 
       previousNodesRef.current = currentNodesKey
@@ -282,7 +310,7 @@ export function GraphVisualization({
         }
       })
     }
-  }, [nodes, edges, mode, layoutMode, selectedNodes, expandedNodes, isInitialized])
+  }, [nodes, edges, mode, layoutMode, selectedNodes, expandedNodes, isInitialized, fixedLayout])
 
   return (
     <div

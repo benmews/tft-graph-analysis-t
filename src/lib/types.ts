@@ -31,6 +31,7 @@ export interface GraphNode {
   expanded?: boolean
   pinned?: boolean
   contestedness?: number
+  position?: { x: number; y: number }
 }
 
 export interface GraphEdge {

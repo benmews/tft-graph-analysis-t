@@ -36,14 +36,14 @@ function mixOklchColors(colors: string[]): string {
 
 function getChampionColorByCost(cost: number): string {
   const costColors: Record<number, string> = {
-    1: 'oklch(0.65 0.08 240)',
-    2: 'oklch(0.60 0.25 145)',
-    3: 'oklch(0.70 0.28 95)',
-    4: 'oklch(0.65 0.30 45)',
-    5: 'oklch(0.55 0.35 25)',
+    1: 'oklch(0.55 0.15 240)',
+    2: 'oklch(0.55 0.35 145)',
+    3: 'oklch(0.65 0.35 95)',
+    4: 'oklch(0.60 0.35 55)',
+    5: 'oklch(0.50 0.40 15)',
   }
   
-  return costColors[cost] || 'oklch(0.65 0.08 240)'
+  return costColors[cost] || 'oklch(0.55 0.15 240)'
 }
 
 export function generateBipartiteGraph(
