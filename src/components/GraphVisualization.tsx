@@ -27,6 +27,8 @@ export function GraphVisualization({
   const hoverTimeoutRef = useRef<number | null>(null)
   const onNodeHoverRef = useRef(onNodeHover)
   const onNodeClickRef = useRef(onNodeClick)
+  const previousNodesRef = useRef<string>('')
+  const previousEdgesRef = useRef<string>('')
 
   useEffect(() => {
     onNodeHoverRef.current = onNodeHover
@@ -181,62 +183,88 @@ export function GraphVisualization({
     if (!cyRef.current || !isInitialized) return
 
     const cy = cyRef.current
+    
+    const currentNodesKey = nodes.map(n => n.id).sort().join(',')
+    const currentEdgesKey = edges.map(e => `${e.source}-${e.target}`).sort().join(',')
+    
+    const structureChanged = 
+      previousNodesRef.current !== currentNodesKey || 
+      previousEdgesRef.current !== currentEdgesKey
 
-    cy.elements().remove()
+    if (structureChanged) {
+      cy.elements().remove()
 
-    const cyNodes = nodes.map((node) => ({
-      data: {
-        id: node.id,
-        label: node.label,
-        type: node.type,
-        color: node.color || 'oklch(0.35 0.02 240)',
-        cost: node.cost,
-      },
-      classes: [
-        selectedNodes.includes(node.id) ? 'selected' : '',
-        expandedNodes.includes(node.id) ? 'expanded' : '',
-      ]
-        .filter(Boolean)
-        .join(' '),
-    }))
+      const cyNodes = nodes.map((node) => ({
+        data: {
+          id: node.id,
+          label: node.label,
+          type: node.type,
+          color: node.color || 'oklch(0.35 0.02 240)',
+          cost: node.cost,
+        },
+        classes: [
+          selectedNodes.includes(node.id) ? 'selected' : '',
+          expandedNodes.includes(node.id) ? 'expanded' : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+      }))
 
-    const cyEdges = edges.map((edge) => ({
-      data: {
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-      },
-    }))
+      const cyEdges = edges.map((edge) => ({
+        data: {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+        },
+      }))
 
-    cy.add([...cyNodes, ...cyEdges])
+      cy.add([...cyNodes, ...cyEdges])
 
-    const layoutOptions =
-      mode === 'bipartite'
-        ? {
-            name: 'breadthfirst',
-            directed: false,
-            spacingFactor: 1.5,
-            animate: true,
-            animationDuration: 400,
-          }
-        : {
-            name: 'cose',
-            animate: true,
-            animationDuration: 400,
-            nodeRepulsion: 8000,
-            idealEdgeLength: 100,
-            edgeElasticity: 100,
-            nestingFactor: 1.2,
-            gravity: 1,
-            numIter: 1000,
-            randomize: false,
-          }
+      const layoutOptions =
+        mode === 'bipartite'
+          ? {
+              name: 'breadthfirst',
+              directed: false,
+              spacingFactor: 1.5,
+              animate: true,
+              animationDuration: 400,
+            }
+          : {
+              name: 'cose',
+              animate: true,
+              animationDuration: 400,
+              nodeRepulsion: 8000,
+              idealEdgeLength: 100,
+              edgeElasticity: 100,
+              nestingFactor: 1.2,
+              gravity: 1,
+              numIter: 1000,
+              randomize: false,
+            }
 
-    const layout = cy.layout(layoutOptions as any)
-    layout.run()
+      const layout = cy.layout(layoutOptions as any)
+      layout.run()
 
-    if (nodes.length > 0) {
-      cy.fit(undefined, 50)
+      if (nodes.length > 0) {
+        cy.fit(undefined, 50)
+      }
+
+      previousNodesRef.current = currentNodesKey
+      previousEdgesRef.current = currentEdgesKey
+    } else {
+      nodes.forEach((node) => {
+        const cyNode = cy.getElementById(node.id)
+        if (cyNode.length > 0) {
+          const classes = [
+            selectedNodes.includes(node.id) ? 'selected' : '',
+            expandedNodes.includes(node.id) ? 'expanded' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')
+          
+          cyNode.classes(classes)
+        }
+      })
     }
   }, [nodes, edges, mode, selectedNodes, expandedNodes, isInitialized])
 
