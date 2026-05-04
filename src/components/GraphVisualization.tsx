@@ -107,7 +107,7 @@ export function GraphVisualization({
           selector: 'node.expanded',
           style: {
             'border-width': '4px',
-            'border-color': '#f4b740',
+            'border-color': '#000000',
             'border-style': 'dashed',
           },
         },
