@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card'
 import { Switch } from './components/ui/switch'
 import { Badge } from './components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
+import { Input } from './components/ui/input'
 import { 
   Select,
   SelectContent,
@@ -23,7 +24,9 @@ import {
   Plus,
   Minus,
   ArrowsClockwise,
-  Lock
+  Lock,
+  SortAscending,
+  Coins
 } from '@phosphor-icons/react'
 
 function App() {
@@ -34,6 +37,8 @@ function App() {
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [fixedLayout, setFixedLayout] = useState(false)
+  const [sortBy, setSortBy] = useState<'alphabetical' | 'cost'>('alphabetical')
+  const [filterText, setFilterText] = useState('')
 
   const { nodes: allNodes, edges: allEdges } = useMemo(() => {
     if (mode === 'bipartite') {
@@ -130,6 +135,26 @@ function App() {
   const selectedChampionNodes = visibleNodes.filter((node) => 
     node.type === 'champion' && selectedChampions.includes(node.id.replace('champion-', ''))
   )
+
+  const sortedAndFilteredChampions = useMemo(() => {
+    let champions = [...currentSet.champions]
+
+    if (filterText) {
+      champions = champions.filter((champion) =>
+        champion.name.toLowerCase().includes(filterText.toLowerCase())
+      )
+    }
+
+    champions.sort((a, b) => {
+      if (sortBy === 'alphabetical') {
+        return a.name.localeCompare(b.name)
+      } else {
+        return a.cost - b.cost
+      }
+    })
+
+    return champions
+  }, [currentSet.champions, sortBy, filterText])
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -308,41 +333,82 @@ function App() {
                 <CardHeader>
                   <CardTitle className="text-base">Available Champions</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1 max-h-96 overflow-y-auto">
-                  {currentSet.champions.map((champion) => {
-                    const isSelected = selectedChampions.includes(champion.id)
-                    return (
-                      <button
-                        key={champion.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedChampions((prev) =>
-                              prev.filter((id) => id !== champion.id)
-                            )
-                          } else {
-                            setSelectedChampions((prev) => [...prev, champion.id])
-                          }
-                        }}
-                        className={`w-full flex items-center justify-between p-2 rounded transition-colors ${
-                          isSelected
-                            ? 'bg-selected/20 border border-selected'
-                            : 'hover:bg-secondary/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {isSelected ? (
-                            <Minus size={16} className="text-selected" weight="bold" />
-                          ) : (
-                            <Plus size={16} className="text-muted-foreground" />
-                          )}
-                          <span className="text-sm font-medium">{champion.name}</span>
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {champion.cost}g
-                          </Badge>
-                        </div>
-                      </button>
-                    )
-                  })}
+                <CardContent className="space-y-3">
+                  <div className="relative">
+                    <MagnifyingGlass
+                      size={18}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                      placeholder="Filter champions..."
+                      value={filterText}
+                      onChange={(e) => setFilterText(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setSortBy('alphabetical')}
+                      variant={sortBy === 'alphabetical' ? 'default' : 'outline'}
+                      className="flex-1 gap-2"
+                      size="sm"
+                    >
+                      <SortAscending size={16} />
+                      A-Z
+                    </Button>
+                    <Button
+                      onClick={() => setSortBy('cost')}
+                      variant={sortBy === 'cost' ? 'default' : 'outline'}
+                      className="flex-1 gap-2"
+                      size="sm"
+                    >
+                      <Coins size={16} />
+                      Cost
+                    </Button>
+                  </div>
+
+                  <div className="space-y-1 max-h-96 overflow-y-auto">
+                    {sortedAndFilteredChampions.map((champion) => {
+                      const isSelected = selectedChampions.includes(champion.id)
+                      return (
+                        <button
+                          key={champion.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedChampions((prev) =>
+                                prev.filter((id) => id !== champion.id)
+                              )
+                            } else {
+                              setSelectedChampions((prev) => [...prev, champion.id])
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between p-2 rounded transition-colors ${
+                            isSelected
+                              ? 'bg-selected/20 border border-selected'
+                              : 'hover:bg-secondary/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isSelected ? (
+                              <Minus size={16} className="text-selected" weight="bold" />
+                            ) : (
+                              <Plus size={16} className="text-muted-foreground" />
+                            )}
+                            <span className="text-sm font-medium">{champion.name}</span>
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {champion.cost}g
+                            </Badge>
+                          </div>
+                        </button>
+                      )
+                    })}
+                    {sortedAndFilteredChampions.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No champions found
+                      </p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
