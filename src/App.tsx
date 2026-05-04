@@ -51,7 +51,7 @@ function App() {
       const nodeId = `champion-${champId}`
       visible.add(nodeId)
       
-      const neighbors = findNeighbors(nodeId, allEdges, 1)
+      const neighbors = findNeighbors(nodeId, allEdges, 2)
       neighbors.forEach((n) => visible.add(n))
     })
 
