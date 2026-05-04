@@ -9,7 +9,7 @@ import { resolve } from 'path'
 const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
 const isCI = process.env.CI === 'true'
 
-// https://vite.dev/config/
+// https://vite.dev/config/ test
 export default defineConfig({
   base: isCI ? '/tft-graph-analysis-t/' : '/',
   plugins: [
