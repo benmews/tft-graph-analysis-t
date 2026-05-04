@@ -92,21 +92,21 @@ export function GraphVisualization({
         {
           selector: 'node.pinned',
           style: {
-            width: '240px',
-            height: '240px',
+            width: '300px',
+            height: '300px',
             'border-width': '6px',
             'border-color': '#f4b740',
             'border-style': 'solid',
-            'text-max-width': '220px',
-            'font-size': '36px',
+            'text-max-width': '280px',
+            'font-size': '40px',
           },
         },
         {
           selector: 'node[type="trait"].pinned',
           style: {
-            width: '250px',
-            height: '250px',
-            'text-max-width': '230px',
+            width: '310px',
+            height: '310px',
+            'text-max-width': '290px',
           },
         },
         {
