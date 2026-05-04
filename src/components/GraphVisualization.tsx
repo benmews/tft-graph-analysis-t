@@ -235,7 +235,7 @@ export function GraphVisualization({
           ? {
               name: 'breadthfirst',
               directed: false,
-              spacingFactor: 1.3,
+              spacingFactor: 2.0,
               animate: true,
               animationDuration: 400,
             }
