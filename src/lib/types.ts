@@ -20,6 +20,8 @@ export interface TFTSet {
 
 export type VisualizationMode = 'bipartite' | 'traits-as-edges'
 
+export type LayoutMode = 'hierarchical' | 'spring'
+
 export interface GraphNode {
   id: string
   type: 'champion' | 'trait'

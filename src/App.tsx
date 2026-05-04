@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { GraphVisualization } from './components/GraphVisualization'
 import { tftSets, set13, set14, set17 } from './lib/tft-data'
 import { generateBipartiteGraph, generateTraitEdgeGraph, findNeighbors } from './lib/graph-utils'
-import { VisualizationMode, GraphNode, GraphEdge, TFTSet } from './lib/types'
+import { VisualizationMode, GraphNode, GraphEdge, TFTSet, LayoutMode } from './lib/types'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card'
 import { Switch } from './components/ui/switch'
@@ -28,6 +28,7 @@ import {
 function App() {
   const [currentSet, setCurrentSet] = useState<TFTSet>(set17)
   const [mode, setMode] = useState<VisualizationMode>('bipartite')
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('hierarchical')
   const [selectedChampions, setSelectedChampions] = useState<string[]>([])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
@@ -115,6 +116,10 @@ function App() {
     setMode(checked ? 'traits-as-edges' : 'bipartite')
   }
 
+  const handleLayoutToggle = (checked: boolean) => {
+    setLayoutMode(checked ? 'spring' : 'hierarchical')
+  }
+
   const selectedChampionNodes = visibleNodes.filter((node) => 
     node.type === 'champion' && selectedChampions.includes(node.id.replace('champion-', ''))
   )
@@ -149,6 +154,15 @@ function App() {
                 onCheckedChange={handleModeToggle}
               />
               <span className="text-sm text-muted-foreground">Trait Edges</span>
+            </div>
+
+            <div className="flex items-center gap-2 px-4 py-2 bg-card rounded-lg border border-border">
+              <span className="text-sm text-muted-foreground">Hierarchical</span>
+              <Switch 
+                checked={layoutMode === 'spring'} 
+                onCheckedChange={handleLayoutToggle}
+              />
+              <span className="text-sm text-muted-foreground">Spring</span>
             </div>
             
             <div className="flex gap-2">
@@ -185,6 +199,7 @@ function App() {
             nodes={visibleNodes}
             edges={visibleEdges}
             mode={mode}
+            layoutMode={layoutMode}
             onNodeClick={handleNodeClick}
             onNodeHover={setHoveredNode}
             selectedNodes={selectedChampions.map((id) => `champion-${id}`)}

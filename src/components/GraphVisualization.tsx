@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import cytoscape, { Core, NodeSingular } from 'cytoscape'
-import { GraphNode, GraphEdge, VisualizationMode } from '@/lib/types'
+import { GraphNode, GraphEdge, VisualizationMode, LayoutMode } from '@/lib/types'
 import { oklchToHex } from '@/lib/color-utils'
 
 interface GraphVisualizationProps {
   nodes: GraphNode[]
   edges: GraphEdge[]
   mode: VisualizationMode
+  layoutMode: LayoutMode
   onNodeClick?: (nodeId: string) => void
   onNodeHover?: (nodeId: string | null) => void
   selectedNodes?: string[]
@@ -17,6 +18,7 @@ export function GraphVisualization({
   nodes,
   edges,
   mode,
+  layoutMode,
   onNodeClick,
   onNodeHover,
   selectedNodes = [],
@@ -231,15 +233,8 @@ export function GraphVisualization({
       cy.add([...cyNodes, ...cyEdges])
 
       const layoutOptions =
-        mode === 'bipartite'
+        layoutMode === 'spring'
           ? {
-              name: 'breadthfirst',
-              directed: false,
-              spacingFactor: 1.0,
-              animate: true,
-              animationDuration: 400,
-            }
-          : {
               name: 'cose',
               animate: true,
               animationDuration: 400,
@@ -250,6 +245,13 @@ export function GraphVisualization({
               gravity: 1,
               numIter: 1000,
               randomize: false,
+            }
+          : {
+              name: 'breadthfirst',
+              directed: false,
+              spacingFactor: 1.0,
+              animate: true,
+              animationDuration: 400,
             }
 
       const layout = cy.layout(layoutOptions as any)
@@ -276,7 +278,7 @@ export function GraphVisualization({
         }
       })
     }
-  }, [nodes, edges, mode, selectedNodes, expandedNodes, isInitialized])
+  }, [nodes, edges, mode, layoutMode, selectedNodes, expandedNodes, isInitialized])
 
   return (
     <div
