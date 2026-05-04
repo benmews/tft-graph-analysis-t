@@ -27,7 +27,7 @@ import {
 
 function App() {
   const [currentSet, setCurrentSet] = useState<TFTSet>(set17)
-  const [mode, setMode] = useState<VisualizationMode>('traits-as-edges')
+  const [mode, setMode] = useState<VisualizationMode>('bipartite')
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('spring')
   const [selectedChampions, setSelectedChampions] = useState<string[]>([])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])

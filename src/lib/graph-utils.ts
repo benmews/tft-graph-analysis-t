@@ -34,12 +34,16 @@ function mixOklchColors(colors: string[]): string {
   return `oklch(${avgL.toFixed(2)} ${avgC.toFixed(2)} ${avgH.toFixed(0)})`
 }
 
-function getChampionColor(champion: Champion, tftSet: TFTSet): string {
-  const traitColors = champion.traits
-    .map(traitId => tftSet.traits.find(t => t.id === traitId)?.color)
-    .filter((color): color is string => color !== undefined)
+function getChampionColorByCost(cost: number): string {
+  const costColors: Record<number, string> = {
+    1: 'oklch(0.55 0.18 180)',
+    2: 'oklch(0.62 0.20 140)',
+    3: 'oklch(0.68 0.22 220)',
+    4: 'oklch(0.75 0.24 280)',
+    5: 'oklch(0.82 0.26 40)',
+  }
   
-  return mixOklchColors(traitColors)
+  return costColors[cost] || 'oklch(0.50 0.15 200)'
 }
 
 export function generateBipartiteGraph(
@@ -64,7 +68,7 @@ export function generateBipartiteGraph(
       type: 'champion',
       label: champion.name,
       cost: champion.cost,
-      color: getChampionColor(champion, tftSet),
+      color: getChampionColorByCost(champion.cost),
     })
 
     champion.traits.forEach((traitId) => {
@@ -92,7 +96,7 @@ export function generateTraitEdgeGraph(
       type: 'champion',
       label: champion.name,
       cost: champion.cost,
-      color: getChampionColor(champion, tftSet),
+      color: getChampionColorByCost(champion.cost),
     })
   })
 

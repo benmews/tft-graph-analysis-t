@@ -212,7 +212,7 @@ export function GraphVisualization({
       const cyNodes = nodes.map((node) => ({
         data: {
           id: node.id,
-          label: node.type === 'champion' && node.cost ? `${node.label} (${node.cost}g)` : node.label,
+          label: node.label,
           type: node.type,
           color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
           cost: node.cost,
