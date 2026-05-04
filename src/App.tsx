@@ -194,7 +194,7 @@ function App() {
           </div>
         </div>
 
-        <div className="flex-1 rounded-lg overflow-hidden">
+        <div className="flex-1 rounded-lg overflow-hidden relative z-0">
           <GraphVisualization
             nodes={visibleNodes}
             edges={visibleEdges}
