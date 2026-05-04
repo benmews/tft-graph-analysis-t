@@ -110,8 +110,8 @@ export function GraphVisualization({
         {
           selector: 'node.expanded',
           style: {
-            'border-width': '5px',
-            'border-color': '#ffffff',
+            'border-width': '8px',
+            'border-color': '#000000',
             'border-style': 'dotted',
           },
         },
