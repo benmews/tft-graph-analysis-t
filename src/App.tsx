@@ -1,13 +1,20 @@
 import { useState, useMemo } from 'react'
 import { GraphVisualization } from './components/GraphVisualization'
-import { sampleTFTSet } from './lib/tft-data'
+import { tftSets, set13, set14 } from './lib/tft-data'
 import { generateBipartiteGraph, generateTraitEdgeGraph, findNeighbors } from './lib/graph-utils'
-import { VisualizationMode, GraphNode, GraphEdge } from './lib/types'
+import { VisualizationMode, GraphNode, GraphEdge, TFTSet } from './lib/types'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card'
 import { Switch } from './components/ui/switch'
 import { Badge } from './components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './components/ui/select'
 import { 
   ArrowsLeftRight, 
   MagnifyingGlass, 
@@ -19,18 +26,19 @@ import {
 } from '@phosphor-icons/react'
 
 function App() {
+  const [currentSet, setCurrentSet] = useState<TFTSet>(set14)
   const [mode, setMode] = useState<VisualizationMode>('bipartite')
-  const [selectedChampions, setSelectedChampions] = useState<string[]>(['powder', 'vander'])
+  const [selectedChampions, setSelectedChampions] = useState<string[]>(['ahri', 'ashe'])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
   const { nodes: allNodes, edges: allEdges } = useMemo(() => {
     if (mode === 'bipartite') {
-      return generateBipartiteGraph(sampleTFTSet, selectedChampions)
+      return generateBipartiteGraph(currentSet, selectedChampions)
     } else {
-      return generateTraitEdgeGraph(sampleTFTSet, selectedChampions)
+      return generateTraitEdgeGraph(currentSet, selectedChampions)
     }
-  }, [mode, selectedChampions])
+  }, [mode, selectedChampions, currentSet])
 
   const visibleNodes = useMemo(() => {
     if (expandedNodes.length === 0 && selectedChampions.length === 0) {
@@ -73,8 +81,19 @@ function App() {
   }
 
   const handleReset = () => {
-    setSelectedChampions(['powder', 'vander'])
+    const defaultChampions = currentSet.id === 'set13' ? ['powder', 'vander'] : ['ahri', 'ashe']
+    setSelectedChampions(defaultChampions)
     setExpandedNodes([])
+  }
+
+  const handleSetChange = (setId: string) => {
+    const newSet = tftSets.find((s) => s.id === setId)
+    if (newSet) {
+      setCurrentSet(newSet)
+      const defaultChampions = setId === 'set13' ? ['powder', 'vander'] : ['ahri', 'ashe']
+      setSelectedChampions(defaultChampions)
+      setExpandedNodes([])
+    }
   }
 
   const handleModeToggle = (checked: boolean) => {
@@ -95,6 +114,19 @@ function App() {
           </div>
           
           <div className="flex items-center gap-4">
+            <Select value={currentSet.id} onValueChange={handleSetChange}>
+              <SelectTrigger className="w-[240px]">
+                <SelectValue placeholder="Select TFT Set" />
+              </SelectTrigger>
+              <SelectContent>
+                {tftSets.map((set) => (
+                  <SelectItem key={set.id} value={set.id}>
+                    {set.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <div className="flex items-center gap-2 px-4 py-2 bg-card rounded-lg border border-border">
               <span className="text-sm text-muted-foreground">Bipartite</span>
               <Switch 
@@ -168,7 +200,7 @@ function App() {
                 <CardContent className="space-y-2">
                   {selectedChampionNodes.length > 0 ? (
                     selectedChampionNodes.map((node) => {
-                      const champion = sampleTFTSet.champions.find(
+                      const champion = currentSet.champions.find(
                         (c) => c.id === node.id.replace('champion-', '')
                       )
                       return (
@@ -184,7 +216,7 @@ function App() {
                           </div>
                           <div className="flex gap-1">
                             {champion?.traits.map((traitId) => {
-                              const trait = sampleTFTSet.traits.find((t) => t.id === traitId)
+                              const trait = currentSet.traits.find((t) => t.id === traitId)
                               return (
                                 <Badge
                                   key={traitId}
@@ -212,7 +244,7 @@ function App() {
                   <CardTitle className="text-base">Available Champions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 max-h-96 overflow-y-auto">
-                  {sampleTFTSet.champions.map((champion) => {
+                  {currentSet.champions.map((champion) => {
                     const isSelected = selectedChampions.includes(champion.id)
                     return (
                       <button
@@ -276,11 +308,11 @@ function App() {
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Champions</span>
-                    <span className="font-mono font-semibold">{sampleTFTSet.champions.length}</span>
+                    <span className="font-mono font-semibold">{currentSet.champions.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Traits</span>
-                    <span className="font-mono font-semibold">{sampleTFTSet.traits.length}</span>
+                    <span className="font-mono font-semibold">{currentSet.traits.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Visible Nodes</span>

@@ -12,6 +12,7 @@ export interface Champion {
 }
 
 export interface TFTSet {
+  id: string
   name: string
   champions: Champion[]
   traits: Trait[]
