@@ -62,12 +62,8 @@ function App() {
   }, [])
 
   const { nodes: allNodes, edges: allEdges } = useMemo(() => {
-    if (mode === 'bipartite') {
-      return generateBipartiteGraph(currentSet, selectedChampions)
-    } else {
-      return generateTraitEdgeGraph(currentSet, selectedChampions)
-    }
-  }, [mode, selectedChampions, currentSet])
+    return mode === 'bipartite' ? generateBipartiteGraph(currentSet) : generateTraitEdgeGraph(currentSet)
+  }, [mode, currentSet])
 
   const visibleNodes = useMemo(() => {
     const filteredNodes = allNodes.filter((node) => {

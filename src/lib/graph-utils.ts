@@ -1,38 +1,4 @@
-import { TFTSet, GraphNode, GraphEdge, VisualizationMode, Champion, Trait } from './types'
-
-function parseOklch(oklchString: string): { L: number; C: number; H: number } {
-  const match = oklchString.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/)
-  if (!match) return { L: 0.5, C: 0.15, H: 200 }
-  return {
-    L: parseFloat(match[1]),
-    C: parseFloat(match[2]),
-    H: parseFloat(match[3]),
-  }
-}
-
-function mixOklchColors(colors: string[]): string {
-  if (colors.length === 0) return 'oklch(0.50 0.15 200)'
-  if (colors.length === 1) return colors[0]
-
-  const parsed = colors.map(parseOklch)
-  
-  const avgL = parsed.reduce((sum, c) => sum + c.L, 0) / parsed.length
-  const avgC = parsed.reduce((sum, c) => sum + c.C, 0) / parsed.length
-  
-  let sinSum = 0
-  let cosSum = 0
-  parsed.forEach(c => {
-    const hueRad = (c.H * Math.PI) / 180
-    sinSum += Math.sin(hueRad)
-    cosSum += Math.cos(hueRad)
-  })
-  
-  const avgHueRad = Math.atan2(sinSum / parsed.length, cosSum / parsed.length)
-  let avgH = (avgHueRad * 180) / Math.PI
-  if (avgH < 0) avgH += 360
-  
-  return `oklch(${avgL.toFixed(2)} ${avgC.toFixed(2)} ${avgH.toFixed(0)})`
-}
+import { TFTSet, GraphNode, GraphEdge } from './types'
 
 function getChampionColorByCost(cost: number): string {
   const costColors: Record<number, string> = {
@@ -42,14 +8,10 @@ function getChampionColorByCost(cost: number): string {
     4: 'oklch(0.60 0.35 55)',
     5: 'oklch(0.50 0.40 15)',
   }
-  
   return costColors[cost] || 'oklch(0.55 0.15 240)'
 }
 
-export function generateBipartiteGraph(
-  tftSet: TFTSet,
-  selectedChampions: string[] = []
-): { nodes: GraphNode[]; edges: GraphEdge[] } {
+export function generateBipartiteGraph(tftSet: TFTSet): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const nodes: GraphNode[] = []
   const edges: GraphEdge[] = []
 
@@ -83,10 +45,7 @@ export function generateBipartiteGraph(
   return { nodes, edges }
 }
 
-export function generateTraitEdgeGraph(
-  tftSet: TFTSet,
-  selectedChampions: string[] = []
-): { nodes: GraphNode[]; edges: GraphEdge[] } {
+export function generateTraitEdgeGraph(tftSet: TFTSet): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const nodes: GraphNode[] = []
   const edges: GraphEdge[] = []
 
@@ -103,30 +62,24 @@ export function generateTraitEdgeGraph(
   const championsByTrait = new Map<string, string[]>()
   tftSet.champions.forEach((champion) => {
     champion.traits.forEach((traitId) => {
-      if (!championsByTrait.has(traitId)) {
-        championsByTrait.set(traitId, [])
-      }
+      if (!championsByTrait.has(traitId)) championsByTrait.set(traitId, [])
       championsByTrait.get(traitId)!.push(champion.id)
     })
   })
 
-  const edgeSet = new Set<string>()
+  const seen = new Set<string>()
   championsByTrait.forEach((champions, traitId) => {
     for (let i = 0; i < champions.length; i++) {
       for (let j = i + 1; j < champions.length; j++) {
-        const source = champions[i]
-        const target = champions[j]
-        const edgeKey = [source, target].sort().join('-')
-        
-        if (!edgeSet.has(edgeKey)) {
-          edgeSet.add(edgeKey)
-          const trait = tftSet.traits.find((t) => t.id === traitId)
-          edges.push({
-            id: `edge-${source}-${target}-${traitId}`,
-            source: `champion-${source}`,
-            target: `champion-${target}`,
-          })
-        }
+        const [a, b] = [champions[i], champions[j]].sort()
+        const key = `${a}-${b}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        edges.push({
+          id: `edge-${a}-${b}-${traitId}`,
+          source: `champion-${a}`,
+          target: `champion-${b}`,
+        })
       }
     }
   })
@@ -134,28 +87,18 @@ export function generateTraitEdgeGraph(
   return { nodes, edges }
 }
 
-export function findNeighbors(
-  nodeId: string,
-  edges: GraphEdge[],
-  hops: number = 1
-): Set<string> {
+export function findNeighbors(nodeId: string, edges: GraphEdge[], hops = 1): Set<string> {
   const neighbors = new Set<string>()
-  const queue: { id: string; depth: number }[] = [{ id: nodeId, depth: 0 }]
   const visited = new Set<string>([nodeId])
+  const queue: { id: string; depth: number }[] = [{ id: nodeId, depth: 0 }]
 
   while (queue.length > 0) {
     const current = queue.shift()!
-    
     if (current.depth >= hops) continue
 
     edges.forEach((edge) => {
-      let neighbor: string | null = null
-      
-      if (edge.source === current.id) {
-        neighbor = edge.target
-      } else if (edge.target === current.id) {
-        neighbor = edge.source
-      }
+      const neighbor =
+        edge.source === current.id ? edge.target : edge.target === current.id ? edge.source : null
 
       if (neighbor && !visited.has(neighbor)) {
         visited.add(neighbor)
@@ -166,40 +109,4 @@ export function findNeighbors(
   }
 
   return neighbors
-}
-
-export function calculateContestedness(
-  championId: string,
-  opponentChampions: string[][]
-): number {
-  let count = 0
-  opponentChampions.forEach((team) => {
-    if (team.includes(championId)) {
-      count++
-    }
-  })
-  return count
-}
-
-export function findSharedTraits(champion1: Champion, champion2: Champion): string[] {
-  return champion1.traits.filter((trait) => champion2.traits.includes(trait))
-}
-
-export function analyzeTraitCoverage(
-  champions: Champion[],
-  allTraits: Trait[]
-): Map<string, number> {
-  const coverage = new Map<string, number>()
-  
-  allTraits.forEach((trait) => {
-    coverage.set(trait.id, 0)
-  })
-
-  champions.forEach((champion) => {
-    champion.traits.forEach((traitId) => {
-      coverage.set(traitId, (coverage.get(traitId) || 0) + 1)
-    })
-  })
-
-  return coverage
 }
