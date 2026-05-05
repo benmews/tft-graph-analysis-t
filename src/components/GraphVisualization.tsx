@@ -203,6 +203,10 @@ export function GraphVisualization({
     cyRef.current = cy
     setIsInitialized(true)
 
+    if (import.meta.env.DEV) {
+      ;(window as any).__cy = cy
+    }
+
     return () => {
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current)

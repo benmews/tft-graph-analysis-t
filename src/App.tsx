@@ -286,6 +286,12 @@ function App() {
     expandedNodeCount: expandedNodes.length,
   }
 
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      ;(window as any).__tftClickNode = handleNodeClick
+    }
+  })
+
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-background text-foreground pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:flex-row md:pb-[env(safe-area-inset-bottom)] md:pt-[env(safe-area-inset-top)]">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] md:gap-4 md:p-6">
