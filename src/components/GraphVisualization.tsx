@@ -1,7 +1,13 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import cytoscape, { Core, NodeSingular } from 'cytoscape'
-import { GraphNode, GraphEdge, VisualizationMode, LayoutMode } from '@/lib/types'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import cytoscape, { Core } from 'cytoscape'
 import { oklchToHex } from '@/lib/color-utils'
+import {
+  buildCytoscapeStyles,
+  getViewportScale,
+  initialLayoutOptions,
+  relayoutOptions,
+} from '@/lib/graph-styles'
+import type { GraphEdge, GraphNode, LayoutMode, VisualizationMode } from '@/lib/types'
 
 interface GraphVisualizationProps {
   nodes: GraphNode[]
@@ -15,10 +21,18 @@ interface GraphVisualizationProps {
   fixedLayout?: boolean
 }
 
+type Viewport = { zoom: number; pan: { x: number; y: number } }
+
+/** Apply pinned/expanded CSS classes to a single Cytoscape node. */
+function nodeClassesFor(id: string, selected: string[], expanded: string[]): string {
+  const isPinned = selected.includes(id)
+  const isExpanded = !isPinned && expanded.includes(id)
+  return [isPinned && 'pinned', isExpanded && 'expanded'].filter(Boolean).join(' ')
+}
+
 export function GraphVisualization({
   nodes,
   edges,
-  mode,
   layoutMode,
   onNodeClick,
   onNodeHover,
@@ -29,145 +43,40 @@ export function GraphVisualization({
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
-  const hoverTimeoutRef = useRef<number | null>(null)
-  const onNodeHoverRef = useRef(onNodeHover)
-  const onNodeClickRef = useRef(onNodeClick)
-  const previousNodesRef = useRef<string>('')
-  const previousEdgesRef = useRef<string>('')
-  const previousLayoutModeRef = useRef<LayoutMode>(layoutMode)
-  const fixedPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map())
-  const savedZoomRef = useRef<{ zoom: number; pan: { x: number; y: number } } | null>(null)
 
+  // Latest callback refs — let event listeners on cy stay mounted while
+  // the React component re-renders with new prop closures.
+  const onNodeClickRef = useRef(onNodeClick)
+  const onNodeHoverRef = useRef(onNodeHover)
   useEffect(() => {
-    onNodeHoverRef.current = onNodeHover
     onNodeClickRef.current = onNodeClick
+    onNodeHoverRef.current = onNodeHover
   })
 
-  const handleNodeHover = useCallback((nodeId: string | null) => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current)
-    }
-    hoverTimeoutRef.current = window.setTimeout(() => {
-      onNodeHoverRef.current?.(nodeId)
-    }, 50)
+  // Track structural state from the previous render so we know when to relayout.
+  const previousNodesKeyRef = useRef('')
+  const previousEdgesKeyRef = useRef('')
+  const previousLayoutModeRef = useRef<LayoutMode>(layoutMode)
+  const fixedPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map())
+  const savedViewportRef = useRef<Viewport | null>(null)
+
+  // Debounce hover events so quick mouseovers don't thrash the parent state.
+  const hoverTimeoutRef = useRef<number | null>(null)
+  const scheduleHover = useCallback((nodeId: string | null) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    hoverTimeoutRef.current = window.setTimeout(() => onNodeHoverRef.current?.(nodeId), 50)
   }, [])
 
+  // ── 1. Initialize Cytoscape once ──────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current || isInitialized) return
 
-    const s = Math.min(1, Math.max(0.55, window.innerWidth / 768))
-    const px = (n: number) => `${Math.round(n * s)}px`
-
+    const scale = getViewportScale()
     const cy = cytoscape({
       container: containerRef.current,
       elements: [],
-      style: [
-        {
-          selector: 'node',
-          style: {
-            'background-color': 'data(color)',
-            label: 'data(label)',
-            color: '#ffffff',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'font-size': px(14),
-            'font-family': 'Space Grotesk, sans-serif',
-            'font-weight': 600,
-            width: px(80),
-            height: px(80),
-            'border-width': px(2),
-            'border-color': '#707070',
-            'border-opacity': 0.2,
-            'text-outline-width': '2px',
-            'text-outline-color': '#000000',
-            'text-wrap': 'wrap',
-            'text-max-width': px(70),
-          },
-        },
-        {
-          selector: 'node[type="champion"]',
-          style: {
-            shape: 'roundrectangle',
-          },
-        },
-        {
-          selector: 'node[type="trait"]',
-          style: {
-            shape: 'ellipse',
-            width: px(85),
-            height: px(85),
-            'text-max-width': px(75),
-          },
-        },
-        {
-          selector: 'node.pinned',
-          style: {
-            width: px(120),
-            height: px(120),
-            'border-width': px(14),
-            'border-color': '#FFD700',
-            'border-style': 'solid',
-            'border-opacity': 1,
-            'text-max-width': px(110),
-            'font-size': px(16),
-            'overlay-color': '#FFD700',
-            'overlay-opacity': 0.3,
-            'overlay-padding': px(8),
-          },
-        },
-        {
-          selector: 'node[type="trait"].pinned',
-          style: {
-            width: px(125),
-            height: px(125),
-            'text-max-width': px(115),
-          },
-        },
-        {
-          selector: 'node.expanded',
-          style: {
-            'border-width': px(4),
-            'border-color': '#000000',
-            'border-opacity': 1,
-            'border-style': 'dotted',
-          },
-        },
-        {
-          selector: 'node:active',
-          style: {
-            'overlay-opacity': 0,
-          },
-        },
-        {
-          selector: 'edge',
-          style: {
-            width: 2,
-            'line-color': '#535863',
-            'curve-style': 'bezier',
-            opacity: 0.4,
-          },
-        },
-        {
-          selector: 'edge.highlighted',
-          style: {
-            width: 3,
-            'line-color': '#7db8c9',
-            opacity: 0.8,
-          },
-        },
-      ],
-      layout: {
-        name: 'cose',
-        animate: true,
-        animationDuration: 400,
-        nodeRepulsion: 4000,
-        idealEdgeLength: Math.round(250 * s),
-        edgeElasticity: 100,
-        nestingFactor: 1.2,
-        gravity: 1,
-        numIter: 1000,
-        randomize: false,
-      },
+      style: buildCytoscapeStyles(scale),
+      layout: initialLayoutOptions(scale) as any,
       userZoomingEnabled: true,
       userPanningEnabled: true,
       boxSelectionEnabled: false,
@@ -175,30 +84,13 @@ export function GraphVisualization({
       maxZoom: 3,
     })
 
-    cy.on('tap', 'node', (evt) => {
-      const node = evt.target
-      onNodeClickRef.current?.(node.id())
+    cy.on('tap', 'node', (e) => onNodeClickRef.current?.(e.target.id()))
+    cy.on('taphold', 'node', (e) => scheduleHover(e.target.id()))
+    cy.on('tap', (e) => {
+      if (e.target === cy) scheduleHover(null)
     })
-
-    cy.on('taphold', 'node', (evt) => {
-      const node = evt.target
-      handleNodeHover(node.id())
-    })
-
-    cy.on('tap', (evt) => {
-      if (evt.target === cy) {
-        handleNodeHover(null)
-      }
-    })
-
-    cy.on('mouseover', 'node', (evt) => {
-      const node = evt.target
-      handleNodeHover(node.id())
-    })
-
-    cy.on('mouseout', 'node', () => {
-      handleNodeHover(null)
-    })
+    cy.on('mouseover', 'node', (e) => scheduleHover(e.target.id()))
+    cy.on('mouseout', 'node', () => scheduleHover(null))
 
     cyRef.current = cy
     setIsInitialized(true)
@@ -208,16 +100,16 @@ export function GraphVisualization({
     }
 
     return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current)
-      }
-      if (cy && !cy.destroyed()) {
-        cy.destroy()
-      }
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+      if (!cy.destroyed()) cy.destroy()
       cyRef.current = null
     }
-  }, [handleNodeHover])
+    // `isInitialized` is read as a one-shot guard — including it in deps
+    // would tear down Cytoscape on the very next render after setIsInitialized.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleHover])
 
+  // ── 2. Re-fit on container resize (orientation flip / browser chrome) ─────
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -235,40 +127,42 @@ export function GraphVisualization({
       prevHeight = height
 
       cy.resize()
-      if (majorChange) {
-        cy.fit(undefined, 50)
-      }
+      if (majorChange) cy.fit(undefined, 50)
     })
 
     observer.observe(container)
     return () => observer.disconnect()
   }, [])
 
+  // ── 3. Sync graph elements + classes with React state ─────────────────────
   useEffect(() => {
-    if (!cyRef.current || !isInitialized) return
-
     const cy = cyRef.current
-    
-    const currentNodesKey = nodes.map(n => n.id).sort().join(',')
-    const currentEdgesKey = edges.map(e => `${e.source}-${e.target}`).sort().join(',')
-    
-    const structureChanged = 
-      previousNodesRef.current !== currentNodesKey || 
-      previousEdgesRef.current !== currentEdgesKey
-    
+    if (!cy || !isInitialized) return
+
+    const nodesKey = nodes.map((n) => n.id).sort().join(',')
+    const edgesKey = edges.map((e) => `${e.source}-${e.target}`).sort().join(',')
+    const structureChanged =
+      previousNodesKeyRef.current !== nodesKey || previousEdgesKeyRef.current !== edgesKey
     const layoutModeChanged = previousLayoutModeRef.current !== layoutMode
 
-    if (structureChanged || layoutModeChanged) {
-      if (structureChanged && !layoutModeChanged) {
-        savedZoomRef.current = {
-          zoom: cy.zoom(),
-          pan: cy.pan()
-        }
-      }
+    // Cheap path: structure unchanged → just sync the pinned/expanded classes.
+    if (!structureChanged && !layoutModeChanged) {
+      nodes.forEach((node) => {
+        const cyNode = cy.getElementById(node.id)
+        if (cyNode.length > 0) cyNode.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes))
+      })
+      return
+    }
 
-      cy.elements().remove()
+    // Save the user's current zoom/pan if we're rebuilding the same layout
+    // (so we can restore it after structure changes mid-session).
+    if (structureChanged && !layoutModeChanged) {
+      savedViewportRef.current = { zoom: cy.zoom(), pan: cy.pan() }
+    }
 
-      const cyNodes = nodes.map((node) => ({
+    cy.elements().remove()
+    cy.add([
+      ...nodes.map((node) => ({
         data: {
           id: node.id,
           label: node.label,
@@ -276,110 +170,58 @@ export function GraphVisualization({
           color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
           cost: node.cost,
         },
-        classes: [
-          selectedNodes.includes(node.id) ? 'pinned' : '',
-          expandedNodes.includes(node.id) && !selectedNodes.includes(node.id) ? 'expanded' : '',
-        ]
-          .filter(Boolean)
-          .join(' '),
-      }))
+        classes: nodeClassesFor(node.id, selectedNodes, expandedNodes),
+      })),
+      ...edges.map((edge) => ({
+        data: { id: edge.id, source: edge.source, target: edge.target },
+      })),
+    ])
 
-      const cyEdges = edges.map((edge) => ({
-        data: {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-        },
-      }))
-
-      cy.add([...cyNodes, ...cyEdges])
-
-      if (fixedLayout && fixedPositionsRef.current.size > 0) {
-        nodes.forEach((node) => {
-          const position = fixedPositionsRef.current.get(node.id)
-          if (position) {
-            const cyNode = cy.getElementById(node.id)
-            if (cyNode.length > 0) {
-              cyNode.position(position)
-            }
-          }
-        })
-
-        if (savedZoomRef.current && structureChanged && !layoutModeChanged) {
-          cy.viewport({
-            zoom: savedZoomRef.current.zoom,
-            pan: savedZoomRef.current.pan
-          })
-        } else if (nodes.length > 0) {
-          cy.fit(undefined, 50)
-        }
-      } else {
-        const s = Math.min(1, Math.max(0.55, window.innerWidth / 768))
-      const layoutOptions =
-          layoutMode === 'spring'
-            ? {
-                name: 'cose',
-                animate: true,
-                animationDuration: 400,
-                nodeRepulsion: 2000,
-                idealEdgeLength: Math.round(120 * s),
-                edgeElasticity: 100,
-                nestingFactor: 1.2,
-                gravity: 1,
-                numIter: 1000,
-                randomize: false,
-              }
-            : {
-                name: 'breadthfirst',
-                directed: false,
-                spacingFactor: 1.0,
-                animate: true,
-                animationDuration: 400,
-              }
-
-        const layout = cy.layout(layoutOptions as any)
-        layout.run()
-
-        if (fixedLayout) {
-          layout.on('layoutstop', () => {
-            cy.nodes().forEach((node) => {
-              const pos = node.position()
-              fixedPositionsRef.current.set(node.id(), { x: pos.x, y: pos.y })
-            })
-          })
-        }
-
-        if (savedZoomRef.current && structureChanged && !layoutModeChanged) {
-          layout.on('layoutstop', () => {
-            cy.viewport({
-              zoom: savedZoomRef.current!.zoom,
-              pan: savedZoomRef.current!.pan
-            })
-          })
-        } else if (nodes.length > 0) {
-          cy.fit(undefined, 50)
-        }
+    const restoreOrFit = () => {
+      if (savedViewportRef.current && structureChanged && !layoutModeChanged) {
+        cy.viewport(savedViewportRef.current)
+      } else if (nodes.length > 0) {
+        cy.fit(undefined, 50)
       }
+    }
 
-      previousNodesRef.current = currentNodesKey
-      previousEdgesRef.current = currentEdgesKey
-      previousLayoutModeRef.current = layoutMode
-    } else {
+    if (fixedLayout && fixedPositionsRef.current.size > 0) {
+      // Reuse previously-computed positions instead of re-laying out the graph.
       nodes.forEach((node) => {
-        const cyNode = cy.getElementById(node.id)
-        if (cyNode.length > 0) {
-          const classes = [
-            selectedNodes.includes(node.id) ? 'pinned' : '',
-            expandedNodes.includes(node.id) && !selectedNodes.includes(node.id) ? 'expanded' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')
-          
-          cyNode.classes(classes)
+        const pos = fixedPositionsRef.current.get(node.id)
+        if (pos) {
+          const cyNode = cy.getElementById(node.id)
+          if (cyNode.length > 0) cyNode.position(pos)
         }
       })
+      restoreOrFit()
+    } else {
+      const layout = cy.layout(relayoutOptions(getViewportScale(), layoutMode) as any)
+      layout.run()
+
+      if (fixedLayout) {
+        layout.on('layoutstop', () => {
+          cy.nodes().forEach((node) => {
+            const pos = node.position()
+            fixedPositionsRef.current.set(node.id(), { x: pos.x, y: pos.y })
+          })
+        })
+      }
+
+      // For the relayout path, restoring the viewport waits for layoutstop
+      // (the layout animation moves nodes after this function returns).
+      if (savedViewportRef.current && structureChanged && !layoutModeChanged) {
+        const saved = savedViewportRef.current
+        layout.on('layoutstop', () => cy.viewport(saved))
+      } else if (nodes.length > 0) {
+        cy.fit(undefined, 50)
+      }
     }
-  }, [nodes, edges, mode, layoutMode, selectedNodes, expandedNodes, isInitialized, fixedLayout])
+
+    previousNodesKeyRef.current = nodesKey
+    previousEdgesKeyRef.current = edgesKey
+    previousLayoutModeRef.current = layoutMode
+  }, [nodes, edges, layoutMode, selectedNodes, expandedNodes, isInitialized, fixedLayout])
 
   return (
     <div
