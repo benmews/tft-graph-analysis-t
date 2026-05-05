@@ -55,6 +55,9 @@ export function GraphVisualization({
   useEffect(() => {
     if (!containerRef.current || isInitialized) return
 
+    const s = Math.min(1, Math.max(0.55, window.innerWidth / 768))
+    const px = (n: number) => `${Math.round(n * s)}px`
+
     const cy = cytoscape({
       container: containerRef.current,
       elements: [],
@@ -67,18 +70,18 @@ export function GraphVisualization({
             color: '#ffffff',
             'text-valign': 'center',
             'text-halign': 'center',
-            'font-size': '14px',
+            'font-size': px(14),
             'font-family': 'Space Grotesk, sans-serif',
             'font-weight': 600,
-            width: '80px',
-            height: '80px',
-            'border-width': '2px',
+            width: px(80),
+            height: px(80),
+            'border-width': px(2),
             'border-color': '#707070',
             'border-opacity': 0.2,
             'text-outline-width': '2px',
             'text-outline-color': '#000000',
             'text-wrap': 'wrap',
-            'text-max-width': '70px',
+            'text-max-width': px(70),
           },
         },
         {
@@ -91,39 +94,39 @@ export function GraphVisualization({
           selector: 'node[type="trait"]',
           style: {
             shape: 'ellipse',
-            width: '85px',
-            height: '85px',
-            'text-max-width': '75px',
+            width: px(85),
+            height: px(85),
+            'text-max-width': px(75),
           },
         },
         {
           selector: 'node.pinned',
           style: {
-            width: '120px',
-            height: '120px',
-            'border-width': '14px',
+            width: px(120),
+            height: px(120),
+            'border-width': px(14),
             'border-color': '#FFD700',
             'border-style': 'solid',
             'border-opacity': 1,
-            'text-max-width': '110px',
-            'font-size': '16px',
+            'text-max-width': px(110),
+            'font-size': px(16),
             'overlay-color': '#FFD700',
             'overlay-opacity': 0.3,
-            'overlay-padding': '8px',
+            'overlay-padding': px(8),
           },
         },
         {
           selector: 'node[type="trait"].pinned',
           style: {
-            width: '125px',
-            height: '125px',
-            'text-max-width': '115px',
+            width: px(125),
+            height: px(125),
+            'text-max-width': px(115),
           },
         },
         {
           selector: 'node.expanded',
           style: {
-            'border-width': '4px',
+            'border-width': px(4),
             'border-color': '#000000',
             'border-opacity': 1,
             'border-style': 'dotted',
@@ -158,7 +161,7 @@ export function GraphVisualization({
         animate: true,
         animationDuration: 400,
         nodeRepulsion: 4000,
-        idealEdgeLength: 250,
+        idealEdgeLength: Math.round(250 * s),
         edgeElasticity: 100,
         nestingFactor: 1.2,
         gravity: 1,
@@ -168,13 +171,24 @@ export function GraphVisualization({
       userZoomingEnabled: true,
       userPanningEnabled: true,
       boxSelectionEnabled: false,
-      minZoom: 0.3,
+      minZoom: 0.5,
       maxZoom: 3,
     })
 
     cy.on('tap', 'node', (evt) => {
       const node = evt.target
       onNodeClickRef.current?.(node.id())
+    })
+
+    cy.on('taphold', 'node', (evt) => {
+      const node = evt.target
+      handleNodeHover(node.id())
+    })
+
+    cy.on('tap', (evt) => {
+      if (evt.target === cy) {
+        handleNodeHover(null)
+      }
     })
 
     cy.on('mouseover', 'node', (evt) => {
@@ -199,6 +213,32 @@ export function GraphVisualization({
       cyRef.current = null
     }
   }, [handleNodeHover])
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    let prevWidth = container.offsetWidth
+    let prevHeight = container.offsetHeight
+
+    const observer = new ResizeObserver((entries) => {
+      const cy = cyRef.current
+      if (!cy || cy.destroyed()) return
+
+      const { width, height } = entries[0].contentRect
+      const majorChange = Math.abs(width - prevWidth) > 50 || Math.abs(height - prevHeight) > 50
+      prevWidth = width
+      prevHeight = height
+
+      cy.resize()
+      if (majorChange) {
+        cy.fit(undefined, 50)
+      }
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!cyRef.current || !isInitialized) return
@@ -270,14 +310,15 @@ export function GraphVisualization({
           cy.fit(undefined, 50)
         }
       } else {
-        const layoutOptions =
+        const s = Math.min(1, Math.max(0.55, window.innerWidth / 768))
+      const layoutOptions =
           layoutMode === 'spring'
             ? {
                 name: 'cose',
                 animate: true,
                 animationDuration: 400,
                 nodeRepulsion: 2000,
-                idealEdgeLength: 120,
+                idealEdgeLength: Math.round(120 * s),
                 edgeElasticity: 100,
                 nestingFactor: 1.2,
                 gravity: 1,

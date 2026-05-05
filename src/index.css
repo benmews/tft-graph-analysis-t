@@ -48,8 +48,6 @@
   --selected-foreground: oklch(0.15 0.03 250);
 
   --radius: 0.5rem;
-
-  --spacing: 0.20rem;
 }
 
 @theme {

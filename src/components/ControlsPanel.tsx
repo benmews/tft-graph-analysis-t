@@ -177,7 +177,7 @@ export function ControlsPanel({
               </Button>
             </div>
 
-            <div className="max-h-[min(24rem,50dvh)] space-y-1 overflow-y-auto md:max-h-96">
+            <div className="max-h-[min(24rem,50dvh)] space-y-1 overflow-y-auto overscroll-contain md:max-h-96">
               {sortedAndFilteredChampions.map((champion) => {
                 const isSelected = selectedChampions.includes(champion.id)
                 return (

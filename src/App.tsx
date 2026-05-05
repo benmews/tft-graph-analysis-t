@@ -287,7 +287,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col bg-background text-foreground md:flex-row md:pb-[env(safe-area-inset-bottom)] md:pl-[env(safe-area-inset-left)] md:pr-[env(safe-area-inset-right)] md:pt-[env(safe-area-inset-top)]">
+    <div className="flex h-dvh min-h-0 flex-col bg-background text-foreground pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:flex-row md:pb-[env(safe-area-inset-bottom)] md:pt-[env(safe-area-inset-top)]">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] md:gap-4 md:p-6">
         <header className="relative z-10 shrink-0 space-y-3">
           <div className="hidden items-center justify-between gap-4 md:flex">
@@ -433,7 +433,7 @@ function App() {
                 type="button"
                 onClick={handleModeToggle}
                 variant="outline"
-                className="coarse:min-h-11 flex-1 gap-2 sm:flex-none"
+                className="coarse:min-h-11 min-w-[4.5rem] flex-1 gap-2 sm:flex-none"
                 title={mode === 'bipartite' ? 'Bipartite graph' : 'Trait edges'}
               >
                 <ArrowsLeftRight className="size-5 shrink-0" />
@@ -443,7 +443,7 @@ function App() {
                 type="button"
                 onClick={handleLayoutToggle}
                 variant="outline"
-                className="coarse:min-h-11 flex-1 gap-2 sm:flex-none"
+                className="coarse:min-h-11 min-w-[4.5rem] flex-1 gap-2 sm:flex-none"
                 title={layoutMode === 'hierarchical' ? 'Hierarchical layout' : 'Spring layout'}
               >
                 <Graph weight="duotone" className="size-5 shrink-0" />
@@ -455,7 +455,7 @@ function App() {
                 type="button"
                 onClick={() => setFixedLayout(!fixedLayout)}
                 variant={fixedLayout ? 'default' : 'outline'}
-                className="coarse:min-h-11 flex-1 gap-2 sm:flex-none"
+                className="coarse:min-h-11 min-w-[4.5rem] flex-1 gap-2 sm:flex-none"
                 title="Fixed node positions"
               >
                 <Lock weight={fixedLayout ? 'fill' : 'regular'} className="size-5 shrink-0" />
