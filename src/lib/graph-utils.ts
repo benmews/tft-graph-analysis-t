@@ -1,4 +1,4 @@
-import { TFTSet, GraphNode, GraphEdge } from './types'
+import { TFTSet, GraphNode, GraphEdge, VisualizationMode } from './types'
 
 function getChampionColorByCost(cost: number): string {
   const costColors: Record<number, string> = {
@@ -109,4 +109,128 @@ export function findNeighbors(nodeId: string, edges: GraphEdge[], hops = 1): Set
   }
 
   return neighbors
+}
+
+export type VisibilityOptions = {
+  mode: VisualizationMode
+  selectedChampions: string[]
+  expandedNodes: string[]
+  enabledCosts: Set<number>
+  fixedLayout: boolean
+}
+
+/**
+ * Decide which nodes are currently visible in the graph view.
+ *
+ * The rules:
+ *  - Cost filter is applied to champion nodes first.
+ *  - With nothing selected/expanded:
+ *      fixedLayout=true  → show every filtered node
+ *      fixedLayout=false → show the first 15 (preview)
+ *  - Selected champion: show its 2-hop neighborhood (1-hop in trait-edges
+ *    mode), plus any "circle trait" that connects two of those revealed
+ *    champions but isn't directly the selected champion's trait.
+ *  - Expanded trait: show the trait + its champion neighbors.
+ *  - Expanded champion: show the champion + its traits, and (in bipartite
+ *    mode only) every other champion that shares any of those traits.
+ */
+export function computeVisibleNodes(
+  allNodes: GraphNode[],
+  allEdges: GraphEdge[],
+  opts: VisibilityOptions,
+): GraphNode[] {
+  const { mode, selectedChampions, expandedNodes, enabledCosts, fixedLayout } = opts
+
+  const filteredNodes = allNodes.filter((node) =>
+    node.type === 'champion' && node.cost !== undefined ? enabledCosts.has(node.cost) : true,
+  )
+
+  if (selectedChampions.length === 0 && expandedNodes.length === 0) {
+    return fixedLayout ? filteredNodes : filteredNodes.slice(0, 15)
+  }
+
+  const visible = new Set<string>()
+
+  selectedChampions.forEach((champId) => {
+    const nodeId = `champion-${champId}`
+    visible.add(nodeId)
+
+    const hops = mode === 'traits-as-edges' ? 1 : 2
+    const neighbors = findNeighbors(nodeId, allEdges, hops)
+    neighbors.forEach((n) => visible.add(n))
+
+    if (mode === 'bipartite') {
+      addCircleTraits(neighbors, allEdges, visible)
+    }
+  })
+
+  expandedNodes.forEach((nodeId) => {
+    visible.add(nodeId)
+
+    if (nodeId.startsWith('trait-')) {
+      findNeighbors(nodeId, allEdges, 1).forEach((n) => {
+        if (n.startsWith('champion-')) visible.add(n)
+      })
+    } else if (nodeId.startsWith('champion-')) {
+      const direct = findNeighbors(nodeId, allEdges, 1)
+      direct.forEach((n) => visible.add(n))
+
+      if (mode === 'bipartite') {
+        Array.from(direct)
+          .filter((n) => n.startsWith('trait-'))
+          .forEach((traitId) => {
+            findNeighbors(traitId, allEdges, 1).forEach((c) => {
+              if (c.startsWith('champion-')) visible.add(c)
+            })
+          })
+      }
+    }
+  })
+
+  return filteredNodes.filter((node) => visible.has(node.id))
+}
+
+/**
+ * Add traits that connect two revealed champions but the selected champion
+ * doesn't directly belong to. Completes the "circle" A → trait → B → trait' → C
+ * — see App.tsx click semantics.
+ */
+function addCircleTraits(
+  selectedNeighbors: Set<string>,
+  allEdges: GraphEdge[],
+  visible: Set<string>,
+) {
+  const revealedChampions = Array.from(selectedNeighbors).filter((n) => n.startsWith('champion-'))
+
+  for (const champ1 of revealedChampions) {
+    for (const champ2 of revealedChampions) {
+      if (champ1 === champ2) continue
+
+      for (const edge of allEdges) {
+        // skip champion ↔ champion edges (only present in trait-edge mode)
+        if (
+          (edge.source === champ1 && edge.target === champ2) ||
+          (edge.source === champ2 && edge.target === champ1)
+        ) {
+          continue
+        }
+
+        // we want trait edges incident to champ1
+        const isChamp1ToTrait = edge.source === champ1 && edge.target.startsWith('trait-')
+        const isTraitToChamp1 = edge.target === champ1 && edge.source.startsWith('trait-')
+        if (!isChamp1ToTrait && !isTraitToChamp1) continue
+
+        const traitNode = isChamp1ToTrait ? edge.target : edge.source
+        if (visible.has(traitNode)) continue
+        if (selectedNeighbors.has(traitNode)) continue
+
+        const champ2Connects = allEdges.some(
+          (e) =>
+            (e.source === champ2 && e.target === traitNode) ||
+            (e.target === champ2 && e.source === traitNode),
+        )
+        if (champ2Connects) visible.add(traitNode)
+      }
+    }
+  }
 }
