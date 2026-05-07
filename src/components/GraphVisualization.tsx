@@ -8,12 +8,13 @@ import {
   relayoutOptions,
 } from '@/lib/graph-styles'
 import { getBakedLayout, makeBakedLayoutKey } from '@/lib/baked-layouts'
-import type { GraphEdge, GraphNode, LayoutMode, VisualizationMode } from '@/lib/types'
+import { computeHierarchicalPositions } from '@/lib/graph-utils'
+import type { GraphEdge, GraphNode, LayoutMode, TFTSet, VisualizationMode } from '@/lib/types'
 
 interface GraphVisualizationProps {
   nodes: GraphNode[]
   edges: GraphEdge[]
-  setId: string
+  set: TFTSet
   mode: VisualizationMode
   layoutMode: LayoutMode
   onNodeClick?: (nodeId: string) => void
@@ -36,7 +37,7 @@ function nodeClassesFor(id: string, selected: string[], expanded: string[]): str
 export function GraphVisualization({
   nodes,
   edges,
-  setId,
+  set,
   mode,
   layoutMode,
   onNodeClick,
@@ -133,7 +134,7 @@ export function GraphVisualization({
         x: Math.round(n.position('x') * 100) / 100,
         y: Math.round(n.position('y') * 100) / 100,
       }))
-      const key = makeBakedLayoutKey(setId, mode, layoutMode)
+      const key = makeBakedLayoutKey(set.id, mode, layoutMode)
       // JSON entry — paste this as a key/value into baked-layouts.json.
       const snippet = `${JSON.stringify(key)}: ${JSON.stringify(positions)}`
       // eslint-disable-next-line no-console
@@ -143,7 +144,7 @@ export function GraphVisualization({
       }
       return snippet
     }
-  }, [setId, mode, layoutMode, isInitialized])
+  }, [set.id, mode, layoutMode, isInitialized])
 
   // ── 2. Re-fit on container resize (orientation flip / browser chrome) ─────
   useEffect(() => {
@@ -223,7 +224,7 @@ export function GraphVisualization({
 
     // Prefer baked positions when available — every visitor sees the same
     // layout that was captured at build time.
-    const baked = fixedLayout ? getBakedLayout(setId, mode, layoutMode) : null
+    const baked = fixedLayout ? getBakedLayout(set.id, mode, layoutMode) : null
     if (baked) {
       // Seed the fixed-positions ref so future structure changes also reuse it.
       baked.forEach((pos, id) => fixedPositionsRef.current.set(id, pos))
@@ -244,6 +245,18 @@ export function GraphVisualization({
           if (cyNode.length > 0) cyNode.position(pos)
         }
       })
+      restoreOrFit()
+    } else if (layoutMode === 'hierarchical') {
+      // Custom 5-row layered layout: origin / champion / class / unique-origin / unique-class
+      const positions = computeHierarchicalPositions(set, nodes)
+      positions.forEach((pos, id) => fixedPositionsRef.current.set(id, pos))
+      const layout = cy.layout({
+        name: 'preset',
+        positions: (node: any) => positions.get(node.id()),
+        fit: false,
+        animate: false,
+      } as any)
+      layout.run()
       restoreOrFit()
     } else {
       const layout = cy.layout(relayoutOptions(getViewportScale(), layoutMode) as any)
@@ -271,7 +284,7 @@ export function GraphVisualization({
     previousNodesKeyRef.current = nodesKey
     previousEdgesKeyRef.current = edgesKey
     previousLayoutModeRef.current = layoutMode
-  }, [nodes, edges, setId, mode, layoutMode, selectedNodes, expandedNodes, isInitialized, fixedLayout])
+  }, [nodes, edges, set, mode, layoutMode, selectedNodes, expandedNodes, isInitialized, fixedLayout])
 
   return (
     <div

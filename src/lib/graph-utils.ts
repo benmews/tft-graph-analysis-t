@@ -1,4 +1,4 @@
-import { TFTSet, GraphNode, GraphEdge, VisualizationMode } from './types'
+import { TFTSet, GraphNode, GraphEdge, VisualizationMode, TraitCategory } from './types'
 
 export function getChampionColorByCost(cost: number): string {
   /**
@@ -346,4 +346,93 @@ function addCircleTraits(
       }
     }
   }
+}
+
+/**
+ * Layered hierarchical layout. Five rows (top → bottom):
+ *   origin  ·  champion  ·  class  ·  unique-origin  ·  unique-class
+ *
+ * Within each row, nodes are distributed evenly. Champions are ordered by
+ * the average x of their adjacent origin/class trait nodes, which gives a
+ * crude crossing-reduction (champions sit roughly under their origin and
+ * above their class).
+ */
+const LAYER_Y = {
+  origin: 0,
+  champion: 350,
+  class: 700,
+  'unique-origin': 1050,
+  'unique-class': 1400,
+} as const satisfies Record<TraitCategory | 'champion', number>
+
+const LAYER_WIDTH = 4800
+
+export function computeHierarchicalPositions(
+  set: TFTSet,
+  visibleNodes: GraphNode[],
+): Map<string, { x: number; y: number }> {
+  const traitsById = new Map(set.traits.map((t) => [t.id, t]))
+  const categoryOf = (rawId: string): TraitCategory => {
+    const id = rawId.replace('trait-', '')
+    return traitsById.get(id)?.category ?? 'class'
+  }
+
+  const buckets: Record<keyof typeof LAYER_Y, GraphNode[]> = {
+    origin: [],
+    champion: [],
+    class: [],
+    'unique-origin': [],
+    'unique-class': [],
+  }
+
+  for (const node of visibleNodes) {
+    if (node.type === 'champion') buckets.champion.push(node)
+    else buckets[categoryOf(node.id)].push(node)
+  }
+
+  const positions = new Map<string, { x: number; y: number }>()
+
+  // Lay out the trait rows alphabetically first, so we have a stable x for
+  // each trait that the champion ordering can lean against.
+  const traitRows: Array<keyof typeof LAYER_Y> = [
+    'origin',
+    'class',
+    'unique-origin',
+    'unique-class',
+  ]
+  for (const row of traitRows) {
+    const list = buckets[row].slice().sort((a, b) => a.label.localeCompare(b.label))
+    if (list.length === 0) continue
+    const step = LAYER_WIDTH / (list.length + 1)
+    list.forEach((node, i) => {
+      positions.set(node.id, { x: step * (i + 1), y: LAYER_Y[row] })
+    })
+  }
+
+  // Champion row: order by mean x of adjacent origin/class trait nodes.
+  // Champions with no positioned trait fall back to alphabetical order at the
+  // end of the row (still deterministic).
+  const champions = buckets.champion
+  const championX = (champ: GraphNode): number => {
+    const traits = set.champions.find((c) => c.id === champ.id.replace('champion-', ''))?.traits ?? []
+    const xs = traits
+      .map((tid) => positions.get(`trait-${tid}`))
+      .filter((p): p is { x: number; y: number } => !!p)
+      .map((p) => p.x)
+    if (xs.length === 0) return Number.POSITIVE_INFINITY
+    return xs.reduce((a, b) => a + b, 0) / xs.length
+  }
+  const orderedChampions = champions
+    .map((c) => ({ node: c, x: championX(c) }))
+    .sort((a, b) => a.x - b.x || a.node.label.localeCompare(b.node.label))
+    .map((entry) => entry.node)
+
+  if (orderedChampions.length > 0) {
+    const step = LAYER_WIDTH / (orderedChampions.length + 1)
+    orderedChampions.forEach((node, i) => {
+      positions.set(node.id, { x: step * (i + 1), y: LAYER_Y.champion })
+    })
+  }
+
+  return positions
 }

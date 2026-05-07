@@ -1,3 +1,5 @@
+export type TraitCategory = 'origin' | 'class' | 'unique-origin' | 'unique-class'
+
 export interface Trait {
   id: string
   name: string
@@ -9,6 +11,12 @@ export interface Trait {
    * Falls back to DEFAULT_TRAIT_BREAKPOINTS when not authored per-trait.
    */
   breakpoints?: number[]
+  /**
+   * TFT trait taxonomy used by the hierarchical layout. Origins and classes
+   * each get their own row; thematic and role-flavored hero traits get
+   * separate rows below so they don't crowd the regular trait rows.
+   */
+  category?: TraitCategory
 }
 
 export const DEFAULT_TRAIT_BREAKPOINTS: readonly number[] = [2, 4, 6]

@@ -217,7 +217,7 @@ function App() {
           <GraphVisualization
             nodes={displayNodes}
             edges={visibleEdges}
-            setId={currentSet.id}
+            set={currentSet}
             mode={mode}
             layoutMode={layoutMode}
             onNodeClick={handleNodeClick}
