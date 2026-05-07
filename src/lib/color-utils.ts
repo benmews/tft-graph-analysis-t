@@ -1,4 +1,9 @@
 export function oklchToHex(oklchString: string): string {
+  // Pass through inputs that are already hex so callers can opt out of the
+  // oklch conversion (which uses a non-standard linear approximation that
+  // desaturates high-chroma values).
+  if (/^#[0-9a-f]{6}$/i.test(oklchString)) return oklchString.toLowerCase()
+
   const match = oklchString.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/)
   if (!match) return '#808080'
 

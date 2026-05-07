@@ -2,18 +2,19 @@ import { TFTSet, GraphNode, GraphEdge, VisualizationMode } from './types'
 
 export function getChampionColorByCost(cost: number): string {
   /**
-   * Cost palette: distinct hues with chroma rising from 1g (muted gray-blue)
-   * through 4g (vivid purple), then 5g jumps to a high-lightness shining
-   * gold so the rare cost stands out at a glance.
+   * Cost palette: TFT-canonical hues, picked as direct sRGB hex so the
+   * vibrancy isn't lost by the oklch→sRGB approximation in oklchToHex.
+   * 1g is intentionally muted (the rare cost that should look "common");
+   * 5g is a bright, shining gold for the rarest tier.
    */
   const costColors: Record<number, string> = {
-    1: 'oklch(0.72 0.04 240)',
-    2: 'oklch(0.66 0.13 150)',
-    3: 'oklch(0.62 0.18 240)',
-    4: 'oklch(0.55 0.23 305)',
-    5: 'oklch(0.84 0.18 90)',
+    1: '#b7bcc7',
+    2: '#22c55e',
+    3: '#3b82f6',
+    4: '#a855f7',
+    5: '#facc15',
   }
-  return costColors[cost] || 'oklch(0.72 0.04 240)'
+  return costColors[cost] || '#b7bcc7'
 }
 
 export function generateBipartiteGraph(tftSet: TFTSet): { nodes: GraphNode[]; edges: GraphEdge[] } {
