@@ -26,6 +26,8 @@ function App() {
   const [controlsOpen, setControlsOpen] = useState(false)
   const [useShortLabels, setUseShortLabels] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [showUniqueTraits, setShowUniqueTraits] = useState(true)
+  const [showUniqueChampions, setShowUniqueChampions] = useState(false)
 
   // Auto-close the mobile drawer when the viewport widens past the md breakpoint
   useEffect(() => {
@@ -51,8 +53,20 @@ function App() {
         expandedNodes,
         enabledCosts,
         fixedLayout,
+        showUniqueTraits,
+        showUniqueChampions,
       }),
-    [allNodes, allEdges, mode, selectedChampions, expandedNodes, enabledCosts, fixedLayout],
+    [
+      allNodes,
+      allEdges,
+      mode,
+      selectedChampions,
+      expandedNodes,
+      enabledCosts,
+      fixedLayout,
+      showUniqueTraits,
+      showUniqueChampions,
+    ],
   )
 
   const visibleEdges = useMemo(() => {
@@ -120,6 +134,8 @@ function App() {
 
   const handleLabelModeToggle = () => setUseShortLabels((v) => !v)
   const handleSidebarToggle = () => setSidebarOpen((v) => !v)
+  const handleUniqueTraitsToggle = () => setShowUniqueTraits((v) => !v)
+  const handleUniqueChampionsToggle = () => setShowUniqueChampions((v) => !v)
   const handleSetChange = (setId: string) => {
     const next = tftSets.find((s) => s.id === setId)
     if (next) {
@@ -174,12 +190,16 @@ function App() {
     fixedLayout,
     useShortLabels,
     sidebarOpen,
+    showUniqueTraits,
+    showUniqueChampions,
     onSetChange: handleSetChange,
     onModeToggle: handleModeToggle,
     onLayoutToggle: handleLayoutToggle,
     onFixedLayoutToggle: handleFixedLayoutToggle,
     onLabelModeToggle: handleLabelModeToggle,
     onSidebarToggle: handleSidebarToggle,
+    onUniqueTraitsToggle: handleUniqueTraitsToggle,
+    onUniqueChampionsToggle: handleUniqueChampionsToggle,
     onExpandAll: handleExpandAll,
     onResetExpansions: handleResetExpansions,
     onResetAll: handleResetAll,

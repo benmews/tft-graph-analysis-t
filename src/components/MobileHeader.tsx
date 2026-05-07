@@ -33,6 +33,8 @@ export type MobileHeaderProps = {
   fixedLayout: boolean
   useShortLabels: boolean
   sidebarOpen: boolean
+  showUniqueTraits: boolean
+  showUniqueChampions: boolean
   controlsOpen: boolean
   onSetChange: (id: string) => void
   onModeToggle: () => void
@@ -40,6 +42,8 @@ export type MobileHeaderProps = {
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
   onSidebarToggle: () => void
+  onUniqueTraitsToggle: () => void
+  onUniqueChampionsToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void

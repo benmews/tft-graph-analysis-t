@@ -126,6 +126,10 @@ export type VisibilityOptions = {
   expandedNodes: string[]
   enabledCosts: Set<number>
   fixedLayout: boolean
+  /** When false, hide trait nodes that connect to only one champion. */
+  showUniqueTraits?: boolean
+  /** When true, always include champions whose traits are *all* unique (i.e. they would otherwise float disconnected). */
+  showUniqueChampions?: boolean
 }
 
 /**
@@ -148,14 +152,81 @@ export function computeVisibleNodes(
   allEdges: GraphEdge[],
   opts: VisibilityOptions,
 ): GraphNode[] {
-  const { mode, selectedChampions, expandedNodes, enabledCosts, fixedLayout } = opts
+  const {
+    mode,
+    selectedChampions,
+    expandedNodes,
+    enabledCosts,
+    fixedLayout,
+    showUniqueTraits = true,
+    showUniqueChampions = false,
+  } = opts
 
-  const filteredNodes = allNodes.filter((node) =>
-    node.type === 'champion' && node.cost !== undefined ? enabledCosts.has(node.cost) : true,
-  )
+  // Compute trait → champion-count once, used by both unique-trait hiding and
+  // unique-champion pinning.
+  const traitChampionCounts = new Map<string, number>()
+  for (const edge of allEdges) {
+    const trait = edge.source.startsWith('trait-')
+      ? edge.source
+      : edge.target.startsWith('trait-')
+        ? edge.target
+        : null
+    if (!trait) continue
+    traitChampionCounts.set(trait, (traitChampionCounts.get(trait) ?? 0) + 1)
+  }
+  const isUniqueTrait = (traitId: string) => (traitChampionCounts.get(traitId) ?? 0) <= 1
+
+  // A champion qualifies as "always visible" when every trait it carries is a
+  // unique trait — these would otherwise float without any connecting edges.
+  const uniqueChampionIds = new Set<string>()
+  if (showUniqueChampions) {
+    const championTraits = new Map<string, string[]>()
+    for (const edge of allEdges) {
+      const champ = edge.source.startsWith('champion-')
+        ? edge.source
+        : edge.target.startsWith('champion-')
+          ? edge.target
+          : null
+      const trait = edge.source.startsWith('trait-')
+        ? edge.source
+        : edge.target.startsWith('trait-')
+          ? edge.target
+          : null
+      if (!champ || !trait) continue
+      const list = championTraits.get(champ) ?? []
+      list.push(trait)
+      championTraits.set(champ, list)
+    }
+    for (const [champ, traits] of championTraits) {
+      if (traits.length > 0 && traits.every((t) => isUniqueTrait(t))) uniqueChampionIds.add(champ)
+    }
+  }
+
+  const passesBaseFilters = (node: GraphNode) => {
+    if (node.type === 'champion') {
+      return node.cost === undefined || enabledCosts.has(node.cost)
+    }
+    if (node.type === 'trait' && !showUniqueTraits) {
+      return !isUniqueTrait(node.id)
+    }
+    return true
+  }
+
+  const filteredNodes = allNodes.filter(passesBaseFilters)
 
   if (selectedChampions.length === 0 && expandedNodes.length === 0) {
-    return fixedLayout ? filteredNodes : filteredNodes.slice(0, 15)
+    if (fixedLayout) return filteredNodes
+    const base = filteredNodes.slice(0, 15)
+    if (showUniqueChampions) {
+      const present = new Set(base.map((n) => n.id))
+      for (const node of filteredNodes) {
+        if (uniqueChampionIds.has(node.id) && !present.has(node.id)) {
+          base.push(node)
+          present.add(node.id)
+        }
+      }
+    }
+    return base
   }
 
   const visible = new Set<string>()
@@ -195,6 +266,10 @@ export function computeVisibleNodes(
       }
     }
   })
+
+  if (showUniqueChampions) {
+    for (const id of uniqueChampionIds) visible.add(id)
+  }
 
   return filteredNodes.filter((node) => visible.has(node.id))
 }
