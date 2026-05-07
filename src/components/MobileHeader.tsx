@@ -3,6 +3,7 @@ import {
   Graph,
   List,
   Lock,
+  MagicWand,
   Plus,
   SlidersHorizontal,
   TextAa,
@@ -35,6 +36,7 @@ export type MobileHeaderProps = {
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
   onSidebarToggle: () => void
+  onTidyLayout: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -49,6 +51,7 @@ export function MobileHeader({
   onSetChange,
   onFixedLayoutToggle,
   onLabelModeToggle,
+  onTidyLayout,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -103,6 +106,15 @@ export function MobileHeader({
               <Lock className="size-4" weight={fixedLayout ? 'fill' : 'regular'} />
               {fixedLayout ? 'Unlock layout' : 'Lock layout'}
             </DropdownMenuItem>
+            {!fixedLayout && (
+              <DropdownMenuItem
+                className="coarse:min-h-11 cursor-pointer"
+                onSelect={onTidyLayout}
+              >
+                <MagicWand className="size-4" />
+                Tidy layout
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               className="coarse:min-h-11 cursor-pointer"
               onSelect={onLabelModeToggle}

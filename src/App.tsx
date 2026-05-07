@@ -26,6 +26,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showUniqueTraits, setShowUniqueTraits] = useState(true)
   const [showUniqueChampions, setShowUniqueChampions] = useState(false)
+  const [tidyCounter, setTidyCounter] = useState(0)
 
   // Auto-close the mobile drawer when the viewport widens past the md breakpoint
   useEffect(() => {
@@ -129,6 +130,7 @@ function App() {
   const handleSidebarToggle = () => setSidebarOpen((v) => !v)
   const handleUniqueTraitsToggle = () => setShowUniqueTraits((v) => !v)
   const handleUniqueChampionsToggle = () => setShowUniqueChampions((v) => !v)
+  const handleTidyLayout = () => setTidyCounter((c) => c + 1)
   const handleSetChange = (setId: string) => {
     const next = tftSets.find((s) => s.id === setId)
     if (next) {
@@ -189,6 +191,7 @@ function App() {
     onFixedLayoutToggle: handleFixedLayoutToggle,
     onLabelModeToggle: handleLabelModeToggle,
     onSidebarToggle: handleSidebarToggle,
+    onTidyLayout: handleTidyLayout,
     onExpandAll: handleExpandAll,
     onResetExpansions: handleResetExpansions,
     onResetAll: handleResetAll,
@@ -212,6 +215,7 @@ function App() {
             expandedNodes={expandedNodes}
             fixedLayout={fixedLayout}
             largeLabels={useShortLabels}
+            tidyTrigger={tidyCounter}
           />
         </div>
       </div>

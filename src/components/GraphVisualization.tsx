@@ -20,6 +20,8 @@ interface GraphVisualizationProps {
   expandedNodes?: string[]
   fixedLayout?: boolean
   largeLabels?: boolean
+  /** Increment to force a fresh cose layout on the visible nodes. */
+  tidyTrigger?: number
 }
 
 type Viewport = { zoom: number; pan: { x: number; y: number } }
@@ -41,6 +43,7 @@ export function GraphVisualization({
   expandedNodes = [],
   fixedLayout = false,
   largeLabels = false,
+  tidyTrigger = 0,
 }: GraphVisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
@@ -120,6 +123,17 @@ export function GraphVisualization({
     if (!cy || !isInitialized) return
     cy.style(buildCytoscapeStyles(getViewportScale(), largeLabels) as any)
   }, [largeLabels, isInitialized])
+
+  // ── 1d. Tidy layout: re-run cose on every visible node, no locks ─────────
+  const tidyTriggerRef = useRef(tidyTrigger)
+  useEffect(() => {
+    if (tidyTriggerRef.current === tidyTrigger) return
+    tidyTriggerRef.current = tidyTrigger
+    const cy = cyRef.current
+    if (!cy || !isInitialized) return
+    cy.nodes().unlock()
+    cy.layout(relayoutOptions(getViewportScale()) as any).run()
+  }, [tidyTrigger, isInitialized])
 
   // ── 1c. Dev hook: print current node positions for baked-layouts.json ─────
   useEffect(() => {

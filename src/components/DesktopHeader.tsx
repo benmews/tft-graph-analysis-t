@@ -3,6 +3,7 @@ import {
   CaretDoubleLeft,
   CaretDoubleRight,
   Lock,
+  MagicWand,
   Plus,
   TextAa,
 } from '@phosphor-icons/react'
@@ -26,6 +27,7 @@ export type DesktopHeaderProps = {
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
   onSidebarToggle: () => void
+  onTidyLayout: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -40,6 +42,7 @@ export function DesktopHeader({
   onFixedLayoutToggle,
   onLabelModeToggle,
   onSidebarToggle,
+  onTidyLayout,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -70,6 +73,18 @@ export function DesktopHeader({
           <Lock weight={fixedLayout ? 'fill' : 'regular'} />
           Fixed Layout
         </Button>
+
+        {!fixedLayout && (
+          <Button
+            onClick={onTidyLayout}
+            variant="outline"
+            className="h-10 shrink-0 gap-2 text-[0.95rem]"
+            title="Re-run the spring layout on the visible nodes"
+          >
+            <MagicWand />
+            Tidy layout
+          </Button>
+        )}
 
         <Button
           onClick={onLabelModeToggle}
