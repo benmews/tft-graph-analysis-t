@@ -163,11 +163,11 @@ export function computeVisibleNodes(
   }
 
   // Override nodes: visible regardless of filters, AND treated as present
-  // in the reveal graph so they can serve as intermediates.
+  // in the reveal graph so they can serve as intermediates. Pinned unique
+  // champions are NOT overrides — they still obey cost/unique-trait filters.
   const overrideIds = new Set<string>()
   for (const cid of selectedChampions) overrideIds.add(`champion-${cid}`)
   for (const eid of expandedNodes) overrideIds.add(eid)
-  if (showUniqueChampions) for (const id of uniqueChampionIds) overrideIds.add(id)
 
   const passesFilter = (node: GraphNode): boolean => {
     if (node.type === 'champion') {
@@ -224,10 +224,16 @@ export function computeVisibleNodes(
     }
   })
 
-  // Selected, expanded, and (when on) unique-champion overrides are always
-  // visible — even when they themselves were filtered out by cost or carry
-  // no allowed edges to lean on.
+  // Selected and expanded overrides are always visible — even when they
+  // themselves were filtered out by cost or carry no allowed edges to lean on.
   for (const id of overrideIds) visible.add(id)
+
+  // Pinned unique champions appear when allowed (cost filter still applies).
+  if (showUniqueChampions) {
+    for (const id of uniqueChampionIds) {
+      if (allowedNodeIds.has(id)) visible.add(id)
+    }
+  }
 
   return allowedNodes.filter((node) => visible.has(node.id))
 }
