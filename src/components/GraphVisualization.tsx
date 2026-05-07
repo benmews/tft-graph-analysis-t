@@ -84,6 +84,9 @@ export function GraphVisualization({
       boxSelectionEnabled: false,
       minZoom: 0.5,
       maxZoom: 3,
+      // Mouse-wheel deltas tend to be much larger than touchpad pinch deltas;
+      // dial cytoscape's default 1 down so wheel zoom feels comparable.
+      wheelSensitivity: 0.25,
     })
 
     cy.on('tap', 'node', (e) => onNodeClickRef.current?.(e.target.id()))
