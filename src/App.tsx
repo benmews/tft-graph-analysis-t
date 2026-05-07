@@ -3,7 +3,6 @@ import { ControlsPanel, type ControlsPanelProps } from './components/ControlsPan
 import { DesktopHeader } from './components/DesktopHeader'
 import { GraphVisualization } from './components/GraphVisualization'
 import { MobileHeader } from './components/MobileHeader'
-import { Card, CardContent } from './components/ui/card'
 import {
   Drawer,
   DrawerContent,
@@ -144,8 +143,6 @@ function App() {
     selectedChampions,
     onToggleChampion: (id, add) =>
       setSelectedChampions((prev) => (add ? [...prev, id] : prev.filter((x) => x !== id))),
-    visibleNodeCount: visibleNodes.length,
-    expandedNodeCount: expandedNodes.length,
   }
 
   // Dev-only test hook for canvas node clicks (used by Playwright tests)
@@ -189,32 +186,9 @@ function App() {
             fixedLayout={fixedLayout}
           />
         </div>
-
-        <Card className="relative z-10 shrink-0 bg-card/50 backdrop-blur">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex flex-col gap-2 text-muted-foreground md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="font-mono">{visibleNodes.length} nodes</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="font-mono">{visibleEdges.length} edges</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="truncate">
-                  {mode === 'bipartite' ? 'Bipartite graph' : 'Trait edge graph'}
-                </span>
-              </div>
-              <p className="text-xs md:text-xs">
-                <span className="md:hidden">Tap nodes to expand · Pinch to zoom · Drag to pan</span>
-                <span className="hidden md:inline">
-                  Click nodes to expand neighbors · Scroll to zoom · Drag to pan
-                </span>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <aside className="hidden w-96 shrink-0 flex-col gap-4 overflow-y-auto border-border border-l bg-card p-6 md:flex">
-        <h2 className="text-xl font-semibold">Controls</h2>
         <ControlsPanel {...controlsProps} />
       </aside>
 

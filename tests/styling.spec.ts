@@ -7,18 +7,9 @@
  */
 
 import { test, expect, Page } from '@playwright/test'
+import { waitForGraph } from './helpers'
 
 test.use({ viewport: { width: 1280, height: 720 } })
-
-async function waitForGraph(page: Page) {
-  await expect(page.getByText(/\d+ nodes/)).toBeVisible()
-}
-
-async function waitForCyNodes(page: Page) {
-  await expect
-    .poll(async () => page.evaluate(() => (window as any).__cy?.nodes().length ?? 0))
-    .toBeGreaterThan(0)
-}
 
 function parseRgb(value: string): [number, number, number] {
   const m = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
@@ -63,7 +54,6 @@ test.describe('Cytoscape node colors', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await waitForGraph(page)
-    await waitForCyNodes(page)
   })
 
   test('every node carries a valid hex color in its data', async ({ page }) => {
@@ -108,7 +98,6 @@ test.describe('Cost legend swatches', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await waitForGraph(page)
-    await waitForCyNodes(page)
   })
 
   test('one swatch is rendered per cost tier (1–5)', async ({ page }) => {

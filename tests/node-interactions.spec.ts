@@ -11,19 +11,11 @@
  */
 
 import { test, expect, Page } from '@playwright/test'
+import { getNodeCount, waitForGraph } from './helpers'
 
 test.use({ viewport: { width: 1280, height: 720 } })
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-async function waitForGraph(page: Page) {
-  await expect(page.getByText(/\d+ nodes/)).toBeVisible()
-}
-
-async function getNodeCount(page: Page): Promise<number> {
-  const text = await page.getByText(/\d+ nodes/).textContent()
-  return parseInt(text?.match(/\d+/)?.[0] ?? '0')
-}
 
 /** Simulate clicking a canvas node by calling the app's click handler directly. */
 async function clickNode(page: Page, nodeId: string): Promise<void> {
@@ -116,7 +108,7 @@ test.describe('Neighborhood expansion correctness', () => {
     })
 
     await clickNode(page, traitId)
-    await expect(page.getByText(`${expected} nodes`)).toBeVisible()
+    await expect.poll(() => getNodeCount(page)).toBe(expected)
   })
 
   test('expanding a champion reveals its traits and all champions of those traits', async ({ page }) => {
@@ -137,7 +129,7 @@ test.describe('Neighborhood expansion correctness', () => {
     })
 
     await clickNode(page, champId)
-    await expect(page.getByText(`${expected} nodes`)).toBeVisible()
+    await expect.poll(() => getNodeCount(page)).toBe(expected)
   })
 
   test('selecting a champion reveals all expansion nodes plus any circle traits', async ({ page }) => {
@@ -182,11 +174,11 @@ test.describe('Neighborhood expansion correctness', () => {
 
     // 1st click: expand — verify expansion neighborhood
     await clickNode(page, champId)
-    await expect(page.getByText(`${expectedExpand} nodes`)).toBeVisible()
+    await expect.poll(() => getNodeCount(page)).toBe(expectedExpand)
 
     // 2nd click: select — verify selection neighborhood (expansion + circle traits)
     await clickNode(page, champId)
-    await expect(page.getByText(`${expectedSelect} nodes`)).toBeVisible()
+    await expect.poll(() => getNodeCount(page)).toBe(expectedSelect)
 
     // Sanity: selection never shows fewer nodes than expansion
     expect(expectedSelect).toBeGreaterThanOrEqual(expectedExpand)

@@ -1,11 +1,8 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
+import { getEdgeCount, getNodeCount, waitForGraph } from './helpers'
 
 // Force mobile viewport for every test in this file
 test.use({ viewport: { width: 412, height: 915 } })
-
-async function waitForGraph(page: Page) {
-  await expect(page.getByText(/\d+ nodes/)).toBeVisible()
-}
 
 // ─── Layout ──────────────────────────────────────────────────────────────────
 
@@ -35,11 +32,6 @@ test.describe('Mobile layout', () => {
 
   test('set selector is visible in mobile header', async ({ page }) => {
     await expect(page.getByRole('combobox')).toBeVisible()
-  })
-
-  test('status bar is visible', async ({ page }) => {
-    await expect(page.getByText(/\d+ nodes/)).toBeVisible()
-    await expect(page.getByText(/\d+ edges/)).toBeVisible()
   })
 })
 
@@ -79,9 +71,7 @@ test.describe('Controls drawer', () => {
   })
 
   test('selecting a champion inside drawer updates node count', async ({ page }) => {
-    const nodesBefore = parseInt(
-      (await page.getByText(/\d+ nodes/).textContent())?.match(/\d+/)?.[0] ?? '0'
-    )
+    const nodesBefore = await getNodeCount(page)
 
     await page.getByRole('button', { name: 'Controls' }).click()
     const drawer = page.locator('#mobile-controls-sheet')
@@ -95,17 +85,8 @@ test.describe('Controls drawer', () => {
     // Dispatch the click directly via JS to bypass the Playwright viewport check.
     await firstChampion.evaluate((el: HTMLElement) => el.click())
 
-    // Close drawer so status bar is readable
-    await page.mouse.click(206, 100)
-
-    // Node count should decrease (selection-based view)
-    await expect(async () => {
-      const nodesAfter = parseInt(
-        (await page.getByText(/\d+ nodes/).textContent())?.match(/\d+/)?.[0] ?? '0'
-      )
-      expect(nodesAfter).toBeLessThan(nodesBefore)
-      expect(nodesAfter).toBeGreaterThan(0)
-    }).toPass({ timeout: 5000 })
+    await expect.poll(() => getNodeCount(page)).toBeLessThan(nodesBefore)
+    expect(await getNodeCount(page)).toBeGreaterThan(0)
   })
 })
 
@@ -118,18 +99,11 @@ test.describe('Mobile mode and layout switching', () => {
   })
 
   test('mode toggle changes edge count', async ({ page }) => {
-    const edgesBefore = parseInt(
-      (await page.getByText(/\d+ edges/).textContent())?.match(/\d+/)?.[0] ?? '0'
-    )
-    await expect(page.getByText('Bipartite graph')).toBeVisible()
-
+    const edgesBefore = await getEdgeCount(page)
     await page.getByRole('button', { name: /Bipartite/i }).click()
+    await expect(page.getByRole('button', { name: /Trait Edges/i })).toBeVisible()
 
-    await expect(page.getByText('Trait edge graph')).toBeVisible()
-    const edgesAfter = parseInt(
-      (await page.getByText(/\d+ edges/).textContent())?.match(/\d+/)?.[0] ?? '0'
-    )
-    expect(edgesAfter).not.toBe(edgesBefore)
+    await expect.poll(() => getEdgeCount(page)).not.toBe(edgesBefore)
   })
 
   test('layout toggle flips button label', async ({ page }) => {

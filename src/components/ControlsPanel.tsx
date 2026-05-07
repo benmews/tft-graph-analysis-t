@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -7,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   MagnifyingGlass,
-  Sparkle,
   Plus,
   Minus,
   SortAscending,
@@ -29,8 +27,6 @@ export type ControlsPanelProps = {
   sortedAndFilteredChampions: Champion[]
   selectedChampions: string[]
   onToggleChampion: (id: string, selected: boolean) => void
-  visibleNodeCount: number
-  expandedNodeCount: number
 }
 
 export function ControlsPanel({
@@ -45,29 +41,9 @@ export function ControlsPanel({
   sortedAndFilteredChampions,
   selectedChampions,
   onToggleChampion,
-  visibleNodeCount,
-  expandedNodeCount,
 }: ControlsPanelProps) {
   return (
-    <Tabs defaultValue="explore" className="w-full">
-      <TabsList className="grid h-auto w-full min-w-0 grid-cols-2 gap-0 overflow-x-auto rounded-lg bg-muted p-[3px]">
-        <TabsTrigger
-          value="explore"
-          className="coarse:min-h-11 gap-2 px-2 py-2 text-sm md:py-1"
-        >
-          <MagnifyingGlass size={16} />
-          Explore
-        </TabsTrigger>
-        <TabsTrigger
-          value="insights"
-          className="coarse:min-h-11 gap-2 px-2 py-2 text-sm md:py-1"
-        >
-          <Sparkle size={16} />
-          Insights
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="explore" className="mt-4 space-y-4">
+    <div className="w-full space-y-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Filter by Cost</CardTitle>
@@ -221,49 +197,6 @@ export function ControlsPanel({
             </div>
           </CardContent>
         </Card>
-      </TabsContent>
-
-      <TabsContent value="insights" className="mt-4 space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">AI Analysis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Get AI-powered suggestions for optimal trait combinations and synergies.
-            </p>
-            <Button className="coarse:min-h-11 w-full gap-2" disabled>
-              <Sparkle weight="fill" />
-              Analyze Current Team
-            </Button>
-            <p className="mt-2 text-center text-xs text-muted-foreground">Coming soon</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Quick Stats</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Champions</span>
-              <span className="font-mono font-semibold">{currentSet.champions.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Traits</span>
-              <span className="font-mono font-semibold">{currentSet.traits.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Visible Nodes</span>
-              <span className="font-mono font-semibold">{visibleNodeCount}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Expanded Nodes</span>
-              <span className="font-mono font-semibold">{expandedNodeCount}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+    </div>
   )
 }
