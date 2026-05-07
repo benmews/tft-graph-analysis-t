@@ -58,6 +58,8 @@ export function DesktopHeader({
         </SelectContent>
       </Select>
 
+      <div aria-hidden="true" className="mx-1 h-7 w-px shrink-0 bg-muted-foreground/30" />
+
       <Button onClick={onModeToggle} variant="outline" className="shrink-0 gap-2">
         <ArrowsLeftRight />
         {mode === 'bipartite' ? 'Bipartite' : 'Trait Edges'}
@@ -76,6 +78,8 @@ export function DesktopHeader({
         <Lock weight={fixedLayout ? 'fill' : 'regular'} />
         Fixed Layout
       </Button>
+
+      <div aria-hidden="true" className="mx-1 h-7 w-px shrink-0 bg-muted-foreground/30" />
 
       <Button onClick={onExpandAll} variant="outline" className="shrink-0 gap-2">
         <Plus weight="bold" />
