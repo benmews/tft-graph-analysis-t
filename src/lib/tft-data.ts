@@ -271,7 +271,7 @@ export const set17: TFTSet = {
     { id: 'kaisa', name: "Kai'Sa", cost: 3, traits: ['dark-star', 'rogue'] },
     { id: 'lulu', name: 'Lulu', cost: 3, traits: ['stargazer', 'replicator'] },
     { id: 'maokai', name: 'Maokai', cost: 3, traits: ['nova', 'brawler'] },
-    { id: 'miss-fortune', name: 'Miss Fortune', cost: 3, traits: ['gun-goddess', 'choose-trait'], shortLabel: 'MF' },
+    { id: 'miss-fortune', name: 'Miss Fortune', cost: 3, traits: ['conduit', 'challenger', 'replicator'], shortLabel: 'MF' },
     { id: 'ornn', name: 'Ornn', cost: 3, traits: ['space-groove', 'bastion'] },
     { id: 'rhaast', name: 'Rhaast', cost: 3, traits: ['redeemer'] },
     { id: 'samira', name: 'Samira', cost: 3, traits: ['space-groove', 'sniper'] },
