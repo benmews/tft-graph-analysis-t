@@ -11,7 +11,7 @@ export function getChampionColorByCost(cost: number): string {
     1: '#b7bcc7',
     2: '#22c55e',
     3: '#3b82f6',
-    4: '#a855f7',
+    4: '#f94802',
     5: '#facc15',
   }
   return costColors[cost] || '#b7bcc7'

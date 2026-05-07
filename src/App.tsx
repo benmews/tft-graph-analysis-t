@@ -204,7 +204,7 @@ function App() {
         </div>
       </div>
 
-      <aside className="hidden w-[28rem] shrink-0 flex-col gap-3 overflow-y-auto border-border border-l bg-card p-4 pt-1.5 md:flex">
+      <aside className="hidden w-[28rem] shrink-0 flex-col border-border border-l bg-card p-4 pt-1.5 md:flex">
         <ControlsPanel {...controlsProps} />
       </aside>
 

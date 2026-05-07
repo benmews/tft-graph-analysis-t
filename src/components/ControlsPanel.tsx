@@ -114,7 +114,7 @@ export function ControlsPanel({
   }, [selectedChampionNodes, currentSet])
 
   return (
-    <div className="w-full space-y-4">
+    <div className="flex w-full min-h-0 flex-1 flex-col gap-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Filter by Cost</CardTitle>
@@ -250,11 +250,11 @@ export function ControlsPanel({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="flex min-h-0 flex-1 flex-col">
           <CardHeader>
             <CardTitle className="text-base">Available Champions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
             <div className="relative">
               <MagnifyingGlass
                 size={18}
@@ -291,7 +291,7 @@ export function ControlsPanel({
               </Button>
             </div>
 
-            <div className="max-h-[min(24rem,50dvh)] space-y-1 overflow-y-auto overscroll-contain md:max-h-96">
+            <div className="min-h-[12rem] flex-1 space-y-1 overflow-y-auto overscroll-contain">
               {sortedAndFilteredChampions.map((champion) => {
                 const isSelected = selectedChampions.includes(champion.id)
                 return (
