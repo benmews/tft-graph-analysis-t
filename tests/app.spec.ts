@@ -153,6 +153,134 @@ test.describe('Traits', () => {
     }
   })
 
+})
+
+test.describe('Header toggles', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await waitForGraph(page)
+  })
+
+  test('sidebar collapse toggle hides and shows the aside', async ({ page }) => {
+    const toggle = page.locator('header').getByRole('button', { name: /Hide sidebar|Show sidebar/i })
+    const aside = page.locator('aside')
+    await expect(aside).toBeVisible()
+    await toggle.click()
+    await expect(aside).not.toBeVisible()
+    await toggle.click()
+    await expect(aside).toBeVisible()
+  })
+
+  test('Short labels toggle swaps cytoscape labels for champions with a shortLabel', async ({ page }) => {
+    // Default mode is Short labels on; Mordekaiser has shortLabel "Morde".
+    const labelOf = (id: string) =>
+      page.evaluate((nid) => {
+        const node = (window as any).__cy.getElementById(nid)
+        return node.length > 0 ? node.data('label') : null
+      }, id)
+
+    await expect.poll(() => labelOf('champion-mordekaiser')).toBe('Morde')
+
+    await page.locator('header').getByRole('button', { name: /Short labels/i }).click()
+    await expect.poll(() => labelOf('champion-mordekaiser')).toBe('Mordekaiser')
+
+    await page.locator('header').getByRole('button', { name: /Short labels/i }).click()
+    await expect.poll(() => labelOf('champion-mordekaiser')).toBe('Morde')
+  })
+
+  test('Tidy layout button is gated on Fixed Layout being off', async ({ page }) => {
+    const tidy = page.locator('header').getByRole('button', { name: /Tidy layout/i })
+    await expect(tidy).not.toBeVisible()
+
+    await page.locator('header').getByRole('button', { name: /Fixed Layout/i }).click()
+    await expect(tidy).toBeVisible()
+
+    // Clicking it should not lose any nodes.
+    const before = await getNodeCount(page)
+    await tidy.click()
+    expect(await getNodeCount(page)).toBe(before)
+
+    // Re-enabling Fixed Layout hides the button again.
+    await page.locator('header').getByRole('button', { name: /Fixed Layout/i }).click()
+    await expect(tidy).not.toBeVisible()
+  })
+
+  test('Unique traits checkbox hides single-champion trait nodes when off', async ({ page }) => {
+    const traitCount = () =>
+      page.evaluate(() => (window as any).__cy.nodes('[type="trait"]').length)
+
+    const before = await traitCount()
+    await page.locator('aside').getByText('Unique traits', { exact: true }).click()
+    const after = await traitCount()
+
+    // Set 17 has 11 unique traits; turning the checkbox off must remove all of them.
+    expect(after).toBeLessThan(before)
+    expect(before - after).toBe(11)
+  })
+
+  test('Unique champions checkbox keeps all-unique champions visible after a selection', async ({ page }) => {
+    // Select Aatrox (alphabetically first) so most champions get filtered out.
+    await page.locator('aside').getByRole('button').filter({ hasText: /\dg/ }).first().click()
+
+    const isVexVisible = () =>
+      page.evaluate(() => (window as any).__cy.getElementById('champion-vex').length > 0)
+
+    // Vex shares no traits with Aatrox, so by default it's filtered out.
+    await expect.poll(isVexVisible).toBe(false)
+
+    await page.locator('aside').getByText('Unique champions', { exact: true }).click()
+    await expect.poll(isVexVisible).toBe(true)
+
+    // Toggling off again removes Vex.
+    await page.locator('aside').getByText('Unique champions', { exact: true }).click()
+    await expect.poll(isVexVisible).toBe(false)
+  })
+})
+
+test.describe('Champion filter & set switcher', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await waitForGraph(page)
+  })
+
+  test('Filter Champions matches both full name and short label', async ({ page }) => {
+    const filter = page.locator('aside').getByPlaceholder('Filter champions...')
+    const rows = page.locator('aside [data-testid^="champion-row-"]')
+
+    // Search by short label — only The Mighty Mech (shortLabel "TMM") matches.
+    await filter.fill('tmm')
+    await expect(rows).toHaveCount(1)
+    await expect(rows.first().getByText('The Mighty Mech')).toBeVisible()
+
+    // Same champion, searched by part of its full name.
+    await filter.fill('mighty')
+    await expect(rows).toHaveCount(1)
+    await expect(rows.first().getByText('The Mighty Mech')).toBeVisible()
+
+    // Clear filter — list expands again.
+    await filter.fill('')
+    expect(await rows.count()).toBeGreaterThan(10)
+  })
+
+  test('switching the TFT set swaps the underlying champion data', async ({ page }) => {
+    // Aurelion Sol is a Set 17 champion; Set 13 has different champs.
+    const hasAurelion = () =>
+      page.evaluate(() => (window as any).__cy.getElementById('champion-aurelion-sol').length > 0)
+    await expect.poll(hasAurelion).toBe(true)
+
+    await page.locator('header').getByRole('combobox').first().click()
+    await page.getByRole('option', { name: /Set 13/i }).click()
+
+    await expect.poll(hasAurelion).toBe(false)
+  })
+})
+
+test.describe('Trait tier styling', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await waitForGraph(page)
+  })
+
   test('trait tier styling: in-progress is outline, last activation is gold', async ({ page }) => {
     // Pick a unique trait — one whose breakpoints are [1] — so a single
     // selected champion lands directly in the highest tier (gold).
