@@ -235,7 +235,7 @@ export function GraphVisualization({
       } as any)
       layout.run()
       restoreOrFit()
-    } else if (fixedLayout && fixedPositionsRef.current.size > 0) {
+    } else if (fixedLayout && !layoutModeChanged && fixedPositionsRef.current.size > 0) {
       // Reuse previously-computed positions instead of re-laying out the graph.
       nodes.forEach((node) => {
         const pos = fixedPositionsRef.current.get(node.id)
