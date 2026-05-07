@@ -17,6 +17,7 @@ function App() {
   const [currentSet, setCurrentSet] = useState<TFTSet>(set17)
   const [selectedChampions, setSelectedChampions] = useState<string[]>([])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
+  const [opponentTraits, setOpponentTraits] = useState<string[]>([])
   const [fixedLayout, setFixedLayout] = useState(true)
   const [sortBy, setSortBy] = useState<'alphabetical' | 'cost'>('alphabetical')
   const [filterText, setFilterText] = useState('')
@@ -49,6 +50,7 @@ function App() {
       computeVisibleNodes(allNodes, allEdges, {
         selectedChampions,
         expandedNodes,
+        opponentTraits,
         enabledCosts,
         fixedLayout,
         showUniqueTraits,
@@ -59,6 +61,7 @@ function App() {
       allEdges,
       selectedChampions,
       expandedNodes,
+      opponentTraits,
       enabledCosts,
       fixedLayout,
       showUniqueTraits,
@@ -81,7 +84,7 @@ function App() {
 
   /**
    * Click semantics:
-   *   - Trait node: toggle unselected ↔ expanded.
+   *   - Trait node: cycle unselected → expanded → opponent-selected → unselected.
    *   - Champion node: cycle unselected → expanded → selected → unselected.
    */
   const handleNodeClick = (nodeId: string) => {
@@ -99,16 +102,27 @@ function App() {
         setExpandedNodes((prev) => [...prev, nodeId])
       }
     } else {
-      setExpandedNodes((prev) =>
-        prev.includes(nodeId) ? prev.filter((id) => id !== nodeId) : [...prev, nodeId],
-      )
+      const isOpponent = opponentTraits.includes(nodeId)
+      const isExpanded = expandedNodes.includes(nodeId)
+      if (isOpponent) {
+        setOpponentTraits((prev) => prev.filter((id) => id !== nodeId))
+      } else if (isExpanded) {
+        setExpandedNodes((prev) => prev.filter((id) => id !== nodeId))
+        setOpponentTraits((prev) => [...prev, nodeId])
+      } else {
+        setExpandedNodes((prev) => [...prev, nodeId])
+      }
     }
   }
 
-  const handleResetExpansions = () => setExpandedNodes([])
+  const handleResetExpansions = () => {
+    setExpandedNodes([])
+    setOpponentTraits([])
+  }
   const handleResetAll = () => {
     setExpandedNodes([])
     setSelectedChampions([])
+    setOpponentTraits([])
   }
   const handleExpandAll = () => {
     // Trait → total champions in the data, used to detect unique traits.
@@ -232,6 +246,7 @@ function App() {
             onNodeClick={handleNodeClick}
             selectedNodes={selectedChampions.map((id) => `champion-${id}`)}
             expandedNodes={expandedNodes}
+            opponentTraits={opponentTraits}
             fixedLayout={fixedLayout}
             largeLabels={useShortLabels}
             tidyTrigger={tidyCounter}

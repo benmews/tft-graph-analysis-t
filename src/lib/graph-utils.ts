@@ -80,6 +80,8 @@ export function findNeighbors(nodeId: string, edges: GraphEdge[], hops = 1): Set
 export type VisibilityOptions = {
   selectedChampions: string[]
   expandedNodes: string[]
+  /** Trait node ids the user has marked as picked by an opponent. */
+  opponentTraits?: string[]
   enabledCosts: Set<number>
   fixedLayout: boolean
   /** When false, hide trait nodes that connect to only one champion. */
@@ -117,6 +119,7 @@ export function computeVisibleNodes(
   const {
     selectedChampions,
     expandedNodes,
+    opponentTraits = [],
     enabledCosts,
     fixedLayout,
     showUniqueTraits = true,
@@ -168,6 +171,7 @@ export function computeVisibleNodes(
   const overrideIds = new Set<string>()
   for (const cid of selectedChampions) overrideIds.add(`champion-${cid}`)
   for (const eid of expandedNodes) overrideIds.add(eid)
+  for (const tid of opponentTraits) overrideIds.add(tid)
 
   const passesFilter = (node: GraphNode): boolean => {
     if (node.type === 'champion') {
@@ -191,7 +195,11 @@ export function computeVisibleNodes(
     (e) => allowedNodeIds.has(e.source) && allowedNodeIds.has(e.target),
   )
 
-  if (selectedChampions.length === 0 && expandedNodes.length === 0) {
+  if (
+    selectedChampions.length === 0 &&
+    expandedNodes.length === 0 &&
+    opponentTraits.length === 0
+  ) {
     if (fixedLayout) return allowedNodes
     const base = allowedNodes.slice(0, 15)
     if (showUniqueChampions) {
@@ -222,6 +230,15 @@ export function computeVisibleNodes(
     } else if (nodeId.startsWith('champion-')) {
       revealChampionNeighborhood(nodeId, effectiveEdges, visible)
     }
+  })
+
+  // Opponent-marked traits behave like expanded traits for visibility:
+  // the trait itself + its champion neighbours.
+  opponentTraits.forEach((nodeId) => {
+    visible.add(nodeId)
+    findNeighbors(nodeId, effectiveEdges, 1).forEach((n) => {
+      if (n.startsWith('champion-')) visible.add(n)
+    })
   })
 
   // Selected and expanded overrides are always visible — even when they

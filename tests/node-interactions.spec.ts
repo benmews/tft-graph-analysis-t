@@ -39,23 +39,33 @@ test.describe('Trait node state machine', () => {
     await waitForGraph(page)
   })
 
-  test('toggles between unselected and expanded on repeated clicks', async ({ page }) => {
+  test('cycles unselected → expanded → opponent-selected → unselected on repeated clicks', async ({ page }) => {
     const traitId = await firstNodeId(page, 'trait')
     const fullCount = await getNodeCount(page)
 
-    // 1st click → expanded: only the trait and its champion neighbors are visible
+    // 1st click → expanded: only the trait + its champion neighbours are visible.
     await clickNode(page, traitId)
-    const expandedCount = await getNodeCount(page)
-    expect(expandedCount).toBeLessThan(fullCount)
+    const afterFirst = await getNodeCount(page)
+    expect(afterFirst).toBeLessThan(fullCount)
+    const traitClass = (id: string) =>
+      page.evaluate((nid) => (window as any).__cy.getElementById(nid).classes(), id)
+    expect(await traitClass(traitId)).toContain('expanded')
 
-    // Traits cannot be selected, so no champion row is marked selected.
+    // Traits cannot be selected (champions can be), so no champion row pinned.
     expect(
       await page.locator('aside [data-testid^="champion-row-"][data-selected="true"]').count(),
     ).toBe(0)
 
-    // 2nd click → collapsed: all nodes return
+    // 2nd click → opponent-selected: same nodes visible, trait class flips.
+    await clickNode(page, traitId)
+    expect(await getNodeCount(page)).toBe(afterFirst)
+    expect(await traitClass(traitId)).toContain('opponent-trait')
+
+    // 3rd click → unselected: full graph returns.
     await clickNode(page, traitId)
     expect(await getNodeCount(page)).toBe(fullCount)
+    expect(await traitClass(traitId)).not.toContain('expanded')
+    expect(await traitClass(traitId)).not.toContain('opponent-trait')
   })
 })
 

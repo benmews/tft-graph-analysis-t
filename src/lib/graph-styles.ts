@@ -72,6 +72,27 @@ export function buildCytoscapeStyles(scale: number, largeLabels = false): any[] 
         'border-style': 'dotted',
       },
     },
+    {
+      selector: 'node.opponent-neighbor',
+      style: {
+        'border-width': px(4),
+        'border-color': '#fca5a5',
+        'border-style': 'solid',
+        'border-opacity': 1,
+        'overlay-color': '#fca5a5',
+        'overlay-opacity': 0.18,
+        'overlay-padding': px(2),
+      },
+    },
+    {
+      selector: 'node.opponent-trait',
+      style: {
+        'border-width': px(12),
+        'border-color': '#dc2626',
+        'border-style': 'solid',
+        'border-opacity': 1,
+      },
+    },
     { selector: 'node:active', style: { 'overlay-opacity': 0 } },
     {
       selector: 'edge',

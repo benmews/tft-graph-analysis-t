@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cytoscape, { Core } from 'cytoscape'
 import { oklchToHex } from '@/lib/color-utils'
 import {
@@ -18,6 +18,7 @@ interface GraphVisualizationProps {
   onNodeHover?: (nodeId: string | null) => void
   selectedNodes?: string[]
   expandedNodes?: string[]
+  opponentTraits?: string[]
   fixedLayout?: boolean
   largeLabels?: boolean
   /** Increment to force a fresh cose layout on the visible nodes. */
@@ -26,11 +27,28 @@ interface GraphVisualizationProps {
 
 type Viewport = { zoom: number; pan: { x: number; y: number } }
 
-/** Apply pinned/expanded CSS classes to a single Cytoscape node. */
-function nodeClassesFor(id: string, selected: string[], expanded: string[]): string {
+/** Apply pinned/expanded/opponent CSS classes to a single Cytoscape node. */
+function nodeClassesFor(
+  id: string,
+  selected: string[],
+  expanded: string[],
+  opponent: string[],
+  opponentNeighbors: Set<string>,
+): string {
+  if (id.startsWith('trait-')) {
+    if (opponent.includes(id)) return 'opponent-trait'
+    if (expanded.includes(id)) return 'expanded'
+    return ''
+  }
+  // champion
   const isPinned = selected.includes(id)
   const isExpanded = !isPinned && expanded.includes(id)
-  return [isPinned && 'pinned', isExpanded && 'expanded'].filter(Boolean).join(' ')
+  const classes = [
+    isPinned && 'pinned',
+    isExpanded && 'expanded',
+    opponentNeighbors.has(id) && 'opponent-neighbor',
+  ].filter(Boolean) as string[]
+  return classes.join(' ')
 }
 
 export function GraphVisualization({
@@ -41,10 +59,24 @@ export function GraphVisualization({
   onNodeHover,
   selectedNodes = [],
   expandedNodes = [],
+  opponentTraits = [],
   fixedLayout = false,
   largeLabels = false,
   tidyTrigger = 0,
 }: GraphVisualizationProps) {
+  // Champions adjacent (1-hop) to any opponent-marked trait. Computed from
+  // the current edge set so it stays in sync as visibility changes.
+  const opponentNeighbors = useMemo(() => {
+    const set = new Set<string>()
+    if (opponentTraits.length === 0) return set
+    const opp = new Set(opponentTraits)
+    for (const e of edges) {
+      if (opp.has(e.source) && e.target.startsWith('champion-')) set.add(e.target)
+      if (opp.has(e.target) && e.source.startsWith('champion-')) set.add(e.source)
+    }
+    return set
+  }, [edges, opponentTraits])
+
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
@@ -200,7 +232,7 @@ export function GraphVisualization({
       nodes.forEach((node) => {
         const cyNode = cy.getElementById(node.id)
         if (cyNode.length === 0) return
-        cyNode.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes))
+        cyNode.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors))
         if (cyNode.data('label') !== node.label) {
           cyNode.data('label', node.label)
         }
@@ -240,7 +272,7 @@ export function GraphVisualization({
             color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
             cost: node.cost,
           },
-          classes: nodeClassesFor(node.id, selectedNodes, expandedNodes),
+          classes: nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors),
         })),
         ...edges.map((edge) => ({
           data: { id: edge.id, source: edge.source, target: edge.target },
@@ -308,11 +340,11 @@ export function GraphVisualization({
               color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
               cost: node.cost,
             },
-            classes: nodeClassesFor(node.id, selectedNodes, expandedNodes),
+            classes: nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors),
           })
           newNodeIds.push(node.id)
         } else {
-          existing.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes))
+          existing.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors))
           if (existing.data('label') !== node.label) existing.data('label', node.label)
         }
       })
@@ -361,7 +393,7 @@ export function GraphVisualization({
 
     previousNodesKeyRef.current = nodesKey
     previousEdgesKeyRef.current = edgesKey
-  }, [nodes, edges, set, selectedNodes, expandedNodes, isInitialized, fixedLayout])
+  }, [nodes, edges, set, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors, isInitialized, fixedLayout])
 
   return (
     <div
