@@ -7,11 +7,13 @@ import {
   initialLayoutOptions,
   relayoutOptions,
 } from '@/lib/graph-styles'
+import { getBakedLayout, makeBakedLayoutKey } from '@/lib/baked-layouts'
 import type { GraphEdge, GraphNode, LayoutMode, VisualizationMode } from '@/lib/types'
 
 interface GraphVisualizationProps {
   nodes: GraphNode[]
   edges: GraphEdge[]
+  setId: string
   mode: VisualizationMode
   layoutMode: LayoutMode
   onNodeClick?: (nodeId: string) => void
@@ -34,6 +36,8 @@ function nodeClassesFor(id: string, selected: string[], expanded: string[]): str
 export function GraphVisualization({
   nodes,
   edges,
+  setId,
+  mode,
   layoutMode,
   onNodeClick,
   onNodeHover,
@@ -118,6 +122,28 @@ export function GraphVisualization({
     cy.style(buildCytoscapeStyles(getViewportScale(), largeLabels) as any)
   }, [largeLabels, isInitialized])
 
+  // ── 1c. Dev hook: print current node positions for baked-layouts.ts ───────
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    ;(window as any).__bakeLayout = () => {
+      const cy = cyRef.current
+      if (!cy) return null
+      const positions = cy.nodes().map((n) => ({
+        id: n.id(),
+        x: Math.round(n.position('x') * 100) / 100,
+        y: Math.round(n.position('y') * 100) / 100,
+      }))
+      const key = makeBakedLayoutKey(setId, mode, layoutMode)
+      const snippet = `'${key}': ${JSON.stringify(positions)},`
+      // eslint-disable-next-line no-console
+      console.log(snippet)
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        navigator.clipboard.writeText(snippet).catch(() => {})
+      }
+      return snippet
+    }
+  }, [setId, mode, layoutMode, isInitialized])
+
   // ── 2. Re-fit on container resize (orientation flip / browser chrome) ─────
   useEffect(() => {
     const container = containerRef.current
@@ -194,7 +220,21 @@ export function GraphVisualization({
       }
     }
 
-    if (fixedLayout && fixedPositionsRef.current.size > 0) {
+    // Prefer baked positions when available — every visitor sees the same
+    // layout that was captured at build time.
+    const baked = fixedLayout ? getBakedLayout(setId, mode, layoutMode) : null
+    if (baked) {
+      // Seed the fixed-positions ref so future structure changes also reuse it.
+      baked.forEach((pos, id) => fixedPositionsRef.current.set(id, pos))
+      const layout = cy.layout({
+        name: 'preset',
+        positions: (node: any) => baked.get(node.id()),
+        fit: false,
+        animate: false,
+      } as any)
+      layout.run()
+      restoreOrFit()
+    } else if (fixedLayout && fixedPositionsRef.current.size > 0) {
       // Reuse previously-computed positions instead of re-laying out the graph.
       nodes.forEach((node) => {
         const pos = fixedPositionsRef.current.get(node.id)
@@ -230,7 +270,7 @@ export function GraphVisualization({
     previousNodesKeyRef.current = nodesKey
     previousEdgesKeyRef.current = edgesKey
     previousLayoutModeRef.current = layoutMode
-  }, [nodes, edges, layoutMode, selectedNodes, expandedNodes, isInitialized, fixedLayout])
+  }, [nodes, edges, setId, mode, layoutMode, selectedNodes, expandedNodes, isInitialized, fixedLayout])
 
   return (
     <div
