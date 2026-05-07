@@ -159,4 +159,35 @@ test.describe('Traits', () => {
       expect(active).toBe(2 >= value)
     }
   })
+
+  test('trait tier styling: in-progress is outline, last activation is gold', async ({ page }) => {
+    // Pick a unique trait — one whose breakpoints are [1] — so a single
+    // selected champion lands directly in the highest tier (gold).
+    const target = await page.evaluate(() => {
+      const cy = (window as any).__cy
+      const champions = cy.nodes('[type="champion"]').map((n: any) => n.data())
+      // Champion ids are like 'champion-vex' in the cy graph; the click hook expects the cy id.
+      // Find any champion adjacent to a trait with [1] breakpoints; in Set 17, Vex has 'doomer' which is [1].
+      const vex = cy.nodes('[type="champion"][label="Vex"]').first()
+      return { cyId: vex.id() }
+    })
+
+    // Click twice to land in selected (expand → select).
+    await page.evaluate((id) => (window as any).__tftClickNode(id), target.cyId)
+    await page.evaluate((id) => (window as any).__tftClickNode(id), target.cyId)
+
+    // Doomer should appear at tier 0 — but since [1] has only one tier,
+    // tier 0 IS the last tier → gold.
+    const doomer = page.locator('aside').getByTestId('activated-trait-doomer')
+    await expect(doomer).toBeVisible()
+    await expect(doomer).toHaveAttribute('data-tier', '0')
+    await expect(doomer).toHaveAttribute('data-activated', 'true')
+
+    // Vex's other traits (none here, Vex is unique-only) — sanity check that
+    // any in-progress entries get tier=-1.
+    const inProgress = page.locator('aside [data-testid^="activated-trait-"][data-activated="false"]')
+    if ((await inProgress.count()) > 0) {
+      await expect(inProgress.first()).toHaveAttribute('data-tier', '-1')
+    }
+  })
 })

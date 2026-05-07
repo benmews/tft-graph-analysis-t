@@ -17,6 +17,42 @@ import { getTraitBreakpoints } from '@/lib/types'
 import { getChampionColorByCost } from '@/lib/graph-utils'
 import { oklchToHex } from '@/lib/color-utils'
 
+/**
+ * Trait-tier color scheme:
+ *   tier === -1 → in-progress  (no fill, slim border)
+ *   tier  ===  last → gold      (highest activation, including 1-tier uniques)
+ *   else → blue gradient        (light at tier 0, darker as tier rises)
+ */
+function getTierStyle(count: number, breakpoints: readonly number[]) {
+  let tier = -1
+  for (let i = 0; i < breakpoints.length; i++) {
+    if (count >= breakpoints[i]) tier = i
+    else break
+  }
+
+  if (tier === -1) {
+    return { tier, variant: 'outline' as const, style: undefined }
+  }
+  if (tier === breakpoints.length - 1) {
+    return {
+      tier,
+      variant: 'default' as const,
+      style: { backgroundColor: 'oklch(0.80 0.17 85)', color: 'oklch(0.20 0.06 85)', borderColor: 'transparent' },
+    }
+  }
+
+  // Distribute the non-gold tiers across a lightness gradient.
+  const blueTiers = breakpoints.length - 1 // last tier is gold
+  const t = blueTiers <= 1 ? 0 : tier / (blueTiers - 1)
+  const L = 0.78 - 0.33 * t
+  const fg = L < 0.6 ? 'oklch(0.99 0 0)' : 'oklch(0.20 0.05 240)'
+  return {
+    tier,
+    variant: 'default' as const,
+    style: { backgroundColor: `oklch(${L.toFixed(2)} 0.15 240)`, color: fg, borderColor: 'transparent' },
+  }
+}
+
 export type ControlsPanelProps = {
   currentSet: TFTSet
   enabledCosts: Set<number>
@@ -118,17 +154,20 @@ export function ControlsPanel({
           <CardContent>
             {traitProgress.length > 0 ? (
               <div className="space-y-1.5">
-                {traitProgress.map(({ trait, count, breakpoints, isActivated }) => (
+                {traitProgress.map(({ trait, count, breakpoints, isActivated }) => {
+                  const tierStyle = getTierStyle(count, breakpoints)
+                  return (
                   <div
                     key={trait.id}
                     data-testid={`activated-trait-${trait.id}`}
                     data-activated={isActivated ? 'true' : 'false'}
-                    className={`flex items-center gap-2 ${isActivated ? '' : 'opacity-60'}`}
+                    data-tier={tierStyle.tier}
+                    className="flex items-center gap-2"
                   >
                     <Badge
                       className="gap-1.5 text-xs"
-                      style={{ backgroundColor: trait.color }}
-                      variant={isActivated ? 'default' : 'outline'}
+                      style={tierStyle.style}
+                      variant={tierStyle.variant}
                     >
                       <span>{trait.name}</span>
                       <span
@@ -158,7 +197,8 @@ export function ControlsPanel({
                       ))}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Select a champion to see traits</p>
