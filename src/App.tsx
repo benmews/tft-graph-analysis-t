@@ -115,10 +115,7 @@ function App() {
     }
   }
 
-  const handleResetExpansions = () => {
-    setExpandedNodes([])
-    setOpponentTraits([])
-  }
+  const handleResetExpansions = () => setExpandedNodes([])
   const handleResetAll = () => {
     setExpandedNodes([])
     setSelectedChampions([])
