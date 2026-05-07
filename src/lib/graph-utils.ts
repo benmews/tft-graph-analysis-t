@@ -232,38 +232,19 @@ export function computeVisibleNodes(
   const visible = new Set<string>()
 
   selectedChampions.forEach((champId) => {
-    const nodeId = `champion-${champId}`
-    visible.add(nodeId)
-
-    const hops = mode === 'traits-as-edges' ? 1 : 2
-    const neighbors = findNeighbors(nodeId, allEdges, hops)
-    neighbors.forEach((n) => visible.add(n))
-
-    if (mode === 'bipartite') {
-      addCircleTraits(neighbors, allEdges, visible)
-    }
+    revealChampionNeighborhood(`champion-${champId}`, mode, allEdges, visible)
   })
 
   expandedNodes.forEach((nodeId) => {
     visible.add(nodeId)
 
     if (nodeId.startsWith('trait-')) {
+      // Bipartite-only path: reveal the trait's champions (distance 1).
       findNeighbors(nodeId, allEdges, 1).forEach((n) => {
         if (n.startsWith('champion-')) visible.add(n)
       })
     } else if (nodeId.startsWith('champion-')) {
-      const direct = findNeighbors(nodeId, allEdges, 1)
-      direct.forEach((n) => visible.add(n))
-
-      if (mode === 'bipartite') {
-        Array.from(direct)
-          .filter((n) => n.startsWith('trait-'))
-          .forEach((traitId) => {
-            findNeighbors(traitId, allEdges, 1).forEach((c) => {
-              if (c.startsWith('champion-')) visible.add(c)
-            })
-          })
-      }
+      revealChampionNeighborhood(nodeId, mode, allEdges, visible)
     }
   })
 
@@ -272,6 +253,54 @@ export function computeVisibleNodes(
   }
 
   return filteredNodes.filter((node) => visible.has(node.id))
+}
+
+/**
+ * Reveal the neighborhood of a champion node (used for both selection and
+ * expansion, in both visualization modes).
+ *
+ *   bipartite:    distance ≤ 2 plus any trait that lies on a 6-cycle through x
+ *                 (i.e. a trait shared by two of x's 2-hop champion neighbours
+ *                 that x itself doesn't carry).
+ *   trait-edges:  distance ≤ 1 plus any champion that lies on a 4-cycle
+ *                 through x (i.e. a champion connected to two distinct
+ *                 1-hop neighbours of x).
+ */
+function revealChampionNeighborhood(
+  champNodeId: string,
+  mode: VisualizationMode,
+  allEdges: GraphEdge[],
+  visible: Set<string>,
+) {
+  visible.add(champNodeId)
+
+  if (mode === 'bipartite') {
+    const neighborhood = findNeighbors(champNodeId, allEdges, 2)
+    neighborhood.forEach((n) => visible.add(n))
+    addCircleTraits(neighborhood, allEdges, visible)
+    return
+  }
+
+  // trait-edges
+  const direct = findNeighbors(champNodeId, allEdges, 1)
+  direct.forEach((n) => visible.add(n))
+
+  // Any champion sharing two distinct neighbours with x sits on a 4-cycle.
+  // Build a frequency map: distance-2 champion → number of distinct 1-hop
+  // neighbours of x that connect to it.
+  const directList = Array.from(direct)
+  const counts = new Map<string, number>()
+  for (const y of directList) {
+    const yNeighbors = findNeighbors(y, allEdges, 1)
+    for (const z of yNeighbors) {
+      if (z === champNodeId) continue
+      if (direct.has(z)) continue
+      counts.set(z, (counts.get(z) ?? 0) + 1)
+    }
+  }
+  for (const [z, c] of counts) {
+    if (c >= 2) visible.add(z)
+  }
 }
 
 /**

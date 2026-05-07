@@ -113,39 +113,18 @@ test.describe('Neighborhood expansion correctness', () => {
     await expect.poll(() => getNodeCount(page)).toBe(expected)
   })
 
-  test('expanding a champion reveals its traits and all champions of those traits', async ({ page }) => {
+  test('expanding or selecting a champion reveals 2-hop neighborhood plus 6-cycle traits', async ({ page }) => {
+    /**
+     * Expanding and selecting a champion now share the same reveal rule:
+     * 2-hop neighborhood (champion's traits + every champion sharing any of
+     * those traits) + any "circle trait" that lies on a 6-cycle through the
+     * champion (a trait shared by two of its 2-hop champions but not held by
+     * the champion itself).
+     */
     const { champId, expected } = await page.evaluate(() => {
       const cy = (window as any).__cy
       const champ = cy.nodes('[type="champion"]').first()
-      const traits = champ.neighborhood('[type="trait"]')
-
-      // 2-hop: every champion reachable via any of those traits (excluding the champion itself)
-      const twoHopIds = new Set<string>()
-      traits.forEach((t: any) => {
-        t.neighborhood('[type="champion"]').forEach((c: any) => {
-          if (c.id() !== champ.id()) twoHopIds.add(c.id())
-        })
-      })
-
-      return { champId: champ.id(), expected: 1 + traits.length + twoHopIds.size }
-    })
-
-    await clickNode(page, champId)
-    await expect.poll(() => getNodeCount(page)).toBe(expected)
-  })
-
-  test('selecting a champion reveals all expansion nodes plus any circle traits', async ({ page }) => {
-    /**
-     * "Circle traits" are traits shared between two revealed 2-hop champions
-     * that the selected champion does not directly belong to.
-     * Example: A has T1, T2. B (via T1) and C (via T2) both have T3.
-     * T3 is added when A is selected, completing the triangle A–B–T3–C.
-     */
-    const { champId, expectedExpand, expectedSelect } = await page.evaluate(() => {
-      const cy = (window as any).__cy
-      const champ = cy.nodes('[type="champion"]').first()
       const champTraits = champ.neighborhood('[type="trait"]')
-
       const champTraitIds = new Set<string>()
       champTraits.forEach((t: any) => champTraitIds.add(t.id()))
 
@@ -157,7 +136,6 @@ test.describe('Neighborhood expansion correctness', () => {
       })
       const twoHopChamps = [...twoHopIds].map((id: string) => cy.$(`#${id}`))
 
-      // Find traits that connect any pair of revealed champions but aren't A's own traits
       const circleIds = new Set<string>()
       twoHopChamps.forEach((b: any) => {
         twoHopChamps.forEach((c: any) => {
@@ -170,19 +148,18 @@ test.describe('Neighborhood expansion correctness', () => {
         })
       })
 
-      const base = 1 + champTraits.length + twoHopIds.size
-      return { champId: champ.id(), expectedExpand: base, expectedSelect: base + circleIds.size }
+      return {
+        champId: champ.id(),
+        expected: 1 + champTraits.length + twoHopIds.size + circleIds.size,
+      }
     })
 
-    // 1st click: expand — verify expansion neighborhood
+    // 1st click: expand
     await clickNode(page, champId)
-    await expect.poll(() => getNodeCount(page)).toBe(expectedExpand)
+    await expect.poll(() => getNodeCount(page)).toBe(expected)
 
-    // 2nd click: select — verify selection neighborhood (expansion + circle traits)
+    // 2nd click: select — visibility unchanged (rule is unified across both)
     await clickNode(page, champId)
-    await expect.poll(() => getNodeCount(page)).toBe(expectedSelect)
-
-    // Sanity: selection never shows fewer nodes than expansion
-    expect(expectedSelect).toBeGreaterThanOrEqual(expectedExpand)
+    await expect.poll(() => getNodeCount(page)).toBe(expected)
   })
 })
