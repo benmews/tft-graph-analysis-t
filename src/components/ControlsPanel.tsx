@@ -13,6 +13,7 @@ import {
   Coins,
 } from '@phosphor-icons/react'
 import type { Champion, GraphNode, TFTSet } from '@/lib/types'
+import { getTraitBreakpoints } from '@/lib/types'
 import { getChampionColorByCost } from '@/lib/graph-utils'
 import { oklchToHex } from '@/lib/color-utils'
 
@@ -55,12 +56,16 @@ export function ControlsPanel({
       }
     }
     return [...counts.entries()]
-      .filter(([, count]) => count > 1)
-      .map(([traitId, count]) => ({
-        trait: currentSet.traits.find((t) => t.id === traitId),
-        count,
-      }))
-      .filter((entry): entry is { trait: NonNullable<typeof entry.trait>; count: number } => !!entry.trait)
+      .map(([traitId, count]) => {
+        const trait = currentSet.traits.find((t) => t.id === traitId)
+        if (!trait) return null
+        const breakpoints = getTraitBreakpoints(trait)
+        return { trait, count, breakpoints }
+      })
+      .filter(
+        (entry): entry is { trait: NonNullable<typeof entry>['trait']; count: number; breakpoints: readonly number[] } =>
+          !!entry && entry.count >= entry.breakpoints[0],
+      )
       .sort((a, b) => b.count - a.count || a.trait.name.localeCompare(b.trait.name))
   }, [selectedChampionNodes, currentSet])
 
@@ -104,22 +109,45 @@ export function ControlsPanel({
           </CardHeader>
           <CardContent>
             {activatedTraits.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {activatedTraits.map(({ trait, count }) => (
-                  <Badge
+              <div className="space-y-1.5">
+                {activatedTraits.map(({ trait, count, breakpoints }) => (
+                  <div
                     key={trait.id}
                     data-testid={`activated-trait-${trait.id}`}
-                    className="gap-1.5 text-xs"
-                    style={{ backgroundColor: trait.color }}
+                    className="flex items-center gap-2"
                   >
-                    <span>{trait.name}</span>
-                    <span
-                      data-testid={`activated-trait-count-${trait.id}`}
-                      className="font-mono font-semibold"
+                    <Badge
+                      className="gap-1.5 text-xs"
+                      style={{ backgroundColor: trait.color }}
                     >
-                      {count}
-                    </span>
-                  </Badge>
+                      <span>{trait.name}</span>
+                      <span
+                        data-testid={`activated-trait-count-${trait.id}`}
+                        className="font-mono font-semibold"
+                      >
+                        {count}
+                      </span>
+                    </Badge>
+                    <div
+                      data-testid={`activated-trait-breakpoints-${trait.id}`}
+                      className="flex items-center gap-1 font-mono text-xs"
+                      aria-label={`Breakpoints: ${breakpoints.join(', ')}`}
+                    >
+                      {breakpoints.map((bp) => (
+                        <span
+                          key={bp}
+                          data-active={count >= bp ? 'true' : 'false'}
+                          className={
+                            count >= bp
+                              ? 'font-semibold text-foreground'
+                              : 'text-muted-foreground'
+                          }
+                        >
+                          {bp}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (

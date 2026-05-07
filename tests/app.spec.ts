@@ -143,5 +143,20 @@ test.describe('Activated Traits', () => {
     await expect(
       page.locator('aside').getByTestId(`activated-trait-count-${target.traitId}`),
     ).toHaveText('2')
+
+    // Breakpoint indicators: default [2, 4, 6]. With count=2 the first should
+    // be marked active and the others inactive.
+    const breakpoints = page
+      .locator('aside')
+      .getByTestId(`activated-trait-breakpoints-${target.traitId}`)
+    await expect(breakpoints).toBeVisible()
+    const states = await breakpoints.locator('span').evaluateAll((els) =>
+      els.map((el) => ({ text: el.textContent, active: el.getAttribute('data-active') })),
+    )
+    expect(states).toEqual([
+      { text: '2', active: 'true' },
+      { text: '4', active: 'false' },
+      { text: '6', active: 'false' },
+    ])
   })
 })
