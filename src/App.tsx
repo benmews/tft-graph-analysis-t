@@ -25,6 +25,7 @@ function App() {
   const [enabledCosts, setEnabledCosts] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]))
   const [controlsOpen, setControlsOpen] = useState(false)
   const [useShortLabels, setUseShortLabels] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // Auto-close the mobile drawer when the viewport widens past the md breakpoint
   useEffect(() => {
@@ -118,6 +119,7 @@ function App() {
   }
 
   const handleLabelModeToggle = () => setUseShortLabels((v) => !v)
+  const handleSidebarToggle = () => setSidebarOpen((v) => !v)
   const handleSetChange = (setId: string) => {
     const next = tftSets.find((s) => s.id === setId)
     if (next) {
@@ -171,11 +173,13 @@ function App() {
     layoutMode,
     fixedLayout,
     useShortLabels,
+    sidebarOpen,
     onSetChange: handleSetChange,
     onModeToggle: handleModeToggle,
     onLayoutToggle: handleLayoutToggle,
     onFixedLayoutToggle: handleFixedLayoutToggle,
     onLabelModeToggle: handleLabelModeToggle,
+    onSidebarToggle: handleSidebarToggle,
     onExpandAll: handleExpandAll,
     onResetExpansions: handleResetExpansions,
     onResetAll: handleResetAll,
@@ -204,7 +208,9 @@ function App() {
         </div>
       </div>
 
-      <aside className="hidden w-[28rem] shrink-0 flex-col border-border border-l bg-card p-4 pt-1.5 md:flex">
+      <aside
+        className={`${sidebarOpen ? 'md:flex' : 'md:hidden'} hidden w-[28rem] shrink-0 flex-col border-border border-l bg-card p-4 pt-1.5`}
+      >
         <ControlsPanel {...controlsProps} />
       </aside>
 

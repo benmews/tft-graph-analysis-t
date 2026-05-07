@@ -32,12 +32,14 @@ export type MobileHeaderProps = {
   layoutMode: LayoutMode
   fixedLayout: boolean
   useShortLabels: boolean
+  sidebarOpen: boolean
   controlsOpen: boolean
   onSetChange: (id: string) => void
   onModeToggle: () => void
   onLayoutToggle: () => void
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
+  onSidebarToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void

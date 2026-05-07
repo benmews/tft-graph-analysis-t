@@ -1,16 +1,18 @@
-import { useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useMemo, useState } from 'react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
-  MagnifyingGlass,
-  Plus,
-  Minus,
-  SortAscending,
+  CaretDown,
+  CaretRight,
   Coins,
+  MagnifyingGlass,
+  Minus,
+  Plus,
+  SortAscending,
 } from '@phosphor-icons/react'
 import type { Champion, GraphNode, TFTSet } from '@/lib/types'
 import { getTraitBreakpoints } from '@/lib/types'
@@ -41,8 +43,7 @@ function getTierStyle(count: number, breakpoints: readonly number[]) {
     }
   }
 
-  // Distribute the non-gold tiers across a lightness gradient.
-  const blueTiers = breakpoints.length - 1 // last tier is gold
+  const blueTiers = breakpoints.length - 1
   const t = blueTiers <= 1 ? 0 : tier / (blueTiers - 1)
   const L = 0.78 - 0.33 * t
   const fg = L < 0.6 ? 'oklch(0.99 0 0)' : 'oklch(0.20 0.05 240)'
@@ -67,6 +68,30 @@ export type ControlsPanelProps = {
   onToggleChampion: (id: string, selected: boolean) => void
 }
 
+function SectionHeader({
+  title,
+  isOpen,
+  onToggle,
+}: {
+  title: string
+  isOpen: boolean
+  onToggle: () => void
+}) {
+  return (
+    <CardHeader>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-1.5 text-base leading-none font-semibold"
+        aria-expanded={isOpen}
+      >
+        {isOpen ? <CaretDown size={14} weight="bold" /> : <CaretRight size={14} weight="bold" />}
+        <span>{title}</span>
+      </button>
+    </CardHeader>
+  )
+}
+
 export function ControlsPanel({
   currentSet,
   enabledCosts,
@@ -80,6 +105,10 @@ export function ControlsPanel({
   selectedChampions,
   onToggleChampion,
 }: ControlsPanelProps) {
+  const [filtersOpen, setFiltersOpen] = useState(true)
+  const [traitsOpen, setTraitsOpen] = useState(true)
+  const [championsOpen, setChampionsOpen] = useState(true)
+
   const traitProgress = useMemo(() => {
     const counts = new Map<string, number>()
     for (const node of selectedChampionNodes) {
@@ -106,19 +135,116 @@ export function ControlsPanel({
           isActivated: boolean
         } => !!entry,
       )
-      .sort((a, b) => {
-        // Activated first, then by count desc, then alphabetical.
-        if (a.isActivated !== b.isActivated) return a.isActivated ? -1 : 1
-        return b.count - a.count || a.trait.name.localeCompare(b.trait.name)
-      })
+      .sort((a, b) => b.count - a.count || a.trait.name.localeCompare(b.trait.name))
   }, [selectedChampionNodes, currentSet])
 
+  const activatedTraits = traitProgress.filter((t) => t.isActivated)
+  const inProgressTraits = traitProgress.filter((t) => !t.isActivated)
+
+  const selectedSet = useMemo(() => new Set(selectedChampions), [selectedChampions])
+  const selectedRows = useMemo(
+    () => sortedAndFilteredChampions.filter((c) => selectedSet.has(c.id)),
+    [sortedAndFilteredChampions, selectedSet],
+  )
+  const unselectedRows = useMemo(
+    () => sortedAndFilteredChampions.filter((c) => !selectedSet.has(c.id)),
+    [sortedAndFilteredChampions, selectedSet],
+  )
+
+  const renderTraitEntry = (
+    entry: (typeof traitProgress)[number],
+  ) => {
+    const tierStyle = getTierStyle(entry.count, entry.breakpoints)
+    return (
+      <div
+        key={entry.trait.id}
+        data-testid={`activated-trait-${entry.trait.id}`}
+        data-activated={entry.isActivated ? 'true' : 'false'}
+        data-tier={tierStyle.tier}
+        className="flex items-center gap-1.5"
+      >
+        <Badge
+          className="gap-1 text-xs"
+          style={tierStyle.style}
+          variant={tierStyle.variant}
+        >
+          <span>{entry.trait.name}</span>
+          <span
+            data-testid={`activated-trait-count-${entry.trait.id}`}
+            className="font-mono font-semibold"
+          >
+            {entry.count}
+          </span>
+        </Badge>
+        <div
+          data-testid={`activated-trait-breakpoints-${entry.trait.id}`}
+          className="flex items-center gap-0.5 font-mono text-xs"
+          aria-label={`Breakpoints: ${entry.breakpoints.join(', ')}`}
+        >
+          {entry.breakpoints.map((bp) => (
+            <span
+              key={bp}
+              data-active={entry.count >= bp ? 'true' : 'false'}
+              className={
+                entry.count >= bp ? 'font-semibold text-foreground' : 'text-muted-foreground'
+              }
+            >
+              {bp}
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const renderChampionRow = (champion: Champion, isSelected: boolean) => (
+    <button
+      key={champion.id}
+      type="button"
+      onClick={() => onToggleChampion(champion.id, !isSelected)}
+      data-testid={`champion-row-${champion.id}`}
+      data-selected={isSelected ? 'true' : 'false'}
+      className={`coarse:min-h-11 flex w-full flex-wrap items-center gap-2 rounded p-1.5 text-left transition-colors ${
+        isSelected ? 'border border-selected bg-selected/20' : 'hover:bg-secondary/50'
+      }`}
+    >
+      <div className="flex min-w-0 items-center gap-1.5">
+        {isSelected ? (
+          <Minus size={14} className="shrink-0 text-selected" weight="bold" />
+        ) : (
+          <Plus size={14} className="shrink-0 text-muted-foreground" />
+        )}
+        <span className="text-sm font-medium">{champion.name}</span>
+        <Badge variant="outline" className="font-mono text-xs">
+          {champion.cost}g
+        </Badge>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {champion.traits.map((traitId) => {
+          const trait = currentSet.traits.find((t) => t.id === traitId)
+          return (
+            <Badge
+              key={traitId}
+              className="text-xs whitespace-nowrap"
+              style={{ backgroundColor: trait?.color }}
+            >
+              {trait?.name}
+            </Badge>
+          )
+        })}
+      </div>
+    </button>
+  )
+
   return (
-    <div className="flex w-full min-h-0 flex-1 flex-col gap-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Filter by Cost</CardTitle>
-          </CardHeader>
+    <div className="flex w-full min-h-0 flex-1 flex-col gap-2">
+      <Card>
+        <SectionHeader
+          title="Filters"
+          isOpen={filtersOpen}
+          onToggle={() => setFiltersOpen((v) => !v)}
+        />
+        {filtersOpen && (
           <CardContent>
             <div className="flex flex-wrap gap-3">
               {[1, 2, 3, 4, 5].map((cost) => (
@@ -145,116 +271,45 @@ export function ControlsPanel({
               ))}
             </div>
           </CardContent>
-        </Card>
+        )}
+      </Card>
 
-        <Card data-testid="traits-card">
-          <CardHeader>
-            <CardTitle className="text-base">Traits</CardTitle>
-          </CardHeader>
+      <Card data-testid="traits-card">
+        <SectionHeader
+          title="Traits"
+          isOpen={traitsOpen}
+          onToggle={() => setTraitsOpen((v) => !v)}
+        />
+        {traitsOpen && (
           <CardContent>
             {traitProgress.length > 0 ? (
               <div className="space-y-1.5">
-                {traitProgress.map(({ trait, count, breakpoints, isActivated }) => {
-                  const tierStyle = getTierStyle(count, breakpoints)
-                  return (
-                  <div
-                    key={trait.id}
-                    data-testid={`activated-trait-${trait.id}`}
-                    data-activated={isActivated ? 'true' : 'false'}
-                    data-tier={tierStyle.tier}
-                    className="flex items-center gap-2"
-                  >
-                    <Badge
-                      className="gap-1.5 text-xs"
-                      style={tierStyle.style}
-                      variant={tierStyle.variant}
-                    >
-                      <span>{trait.name}</span>
-                      <span
-                        data-testid={`activated-trait-count-${trait.id}`}
-                        className="font-mono font-semibold"
-                      >
-                        {count}
-                      </span>
-                    </Badge>
-                    <div
-                      data-testid={`activated-trait-breakpoints-${trait.id}`}
-                      className="flex items-center gap-1 font-mono text-xs"
-                      aria-label={`Breakpoints: ${breakpoints.join(', ')}`}
-                    >
-                      {breakpoints.map((bp) => (
-                        <span
-                          key={bp}
-                          data-active={count >= bp ? 'true' : 'false'}
-                          className={
-                            count >= bp
-                              ? 'font-semibold text-foreground'
-                              : 'text-muted-foreground'
-                          }
-                        >
-                          {bp}
-                        </span>
-                      ))}
-                    </div>
+                {activatedTraits.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                    {activatedTraits.map(renderTraitEntry)}
                   </div>
-                  )
-                })}
+                )}
+                {inProgressTraits.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                    {inProgressTraits.map(renderTraitEntry)}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Select a champion to see traits</p>
             )}
           </CardContent>
-        </Card>
+        )}
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Selected Champions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {selectedChampionNodes.length > 0 ? (
-              selectedChampionNodes.map((node) => {
-                const champion = currentSet.champions.find(
-                  (c) => c.id === node.id.replace('champion-', '')
-                )
-                return (
-                  <div
-                    key={node.id}
-                    className="flex flex-col gap-2 rounded bg-secondary/50 p-2 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{node.label}</span>
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {champion?.cost}g
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {champion?.traits.map((traitId) => {
-                        const trait = currentSet.traits.find((t) => t.id === traitId)
-                        return (
-                          <Badge
-                            key={traitId}
-                            className="text-xs"
-                            style={{ backgroundColor: trait?.color }}
-                          >
-                            {trait?.name}
-                          </Badge>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <p className="text-sm text-muted-foreground">No champions selected</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="flex min-h-0 flex-1 flex-col">
-          <CardHeader>
-            <CardTitle className="text-base">Available Champions</CardTitle>
-          </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+      <Card className={championsOpen ? 'flex min-h-0 flex-1 flex-col' : ''}>
+        <SectionHeader
+          title="Champions"
+          isOpen={championsOpen}
+          onToggle={() => setChampionsOpen((v) => !v)}
+        />
+        {championsOpen && (
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-2">
             <div className="relative">
               <MagnifyingGlass
                 size={18}
@@ -292,33 +347,11 @@ export function ControlsPanel({
             </div>
 
             <div className="min-h-[12rem] flex-1 space-y-1 overflow-y-auto overscroll-contain">
-              {sortedAndFilteredChampions.map((champion) => {
-                const isSelected = selectedChampions.includes(champion.id)
-                return (
-                  <button
-                    key={champion.id}
-                    type="button"
-                    onClick={() => onToggleChampion(champion.id, !isSelected)}
-                    className={`coarse:min-h-11 flex w-full items-center justify-between rounded p-2 transition-colors ${
-                      isSelected
-                        ? 'border border-selected bg-selected/20'
-                        : 'hover:bg-secondary/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {isSelected ? (
-                        <Minus size={16} className="text-selected" weight="bold" />
-                      ) : (
-                        <Plus size={16} className="text-muted-foreground" />
-                      )}
-                      <span className="text-sm font-medium">{champion.name}</span>
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {champion.cost}g
-                      </Badge>
-                    </div>
-                  </button>
-                )
-              })}
+              {selectedRows.map((c) => renderChampionRow(c, true))}
+              {selectedRows.length > 0 && unselectedRows.length > 0 && (
+                <div className="my-2 border-t border-border" />
+              )}
+              {unselectedRows.map((c) => renderChampionRow(c, false))}
               {sortedAndFilteredChampions.length === 0 && (
                 <p className="py-4 text-center text-sm text-muted-foreground">
                   No champions found
@@ -326,7 +359,8 @@ export function ControlsPanel({
               )}
             </div>
           </CardContent>
-        </Card>
+        )}
+      </Card>
     </div>
   )
 }

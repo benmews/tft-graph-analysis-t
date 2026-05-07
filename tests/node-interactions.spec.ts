@@ -48,8 +48,10 @@ test.describe('Trait node state machine', () => {
     const expandedCount = await getNodeCount(page)
     expect(expandedCount).toBeLessThan(fullCount)
 
-    // Traits cannot be selected, so the sidebar still says "No champions selected"
-    await expect(page.locator('aside').getByText('No champions selected')).toBeVisible()
+    // Traits cannot be selected, so no champion row is marked selected.
+    expect(
+      await page.locator('aside [data-testid^="champion-row-"][data-selected="true"]').count(),
+    ).toBe(0)
 
     // 2nd click → collapsed: all nodes return
     await clickNode(page, traitId)
@@ -68,24 +70,24 @@ test.describe('Champion node state machine', () => {
   test('cycles unselected → expanded → selected → unselected', async ({ page }) => {
     const champId = await firstNodeId(page, 'champion')
     const fullCount = await getNodeCount(page)
-    await expect(page.locator('aside').getByText('No champions selected')).toBeVisible()
+    const championRowSlug = champId.replace('champion-', '')
+    const row = page.locator(`aside [data-testid="champion-row-${championRowSlug}"]`)
+
+    await expect(row).toHaveAttribute('data-selected', 'false')
 
     // 1st click: unselected → expanded
-    // Node count decreases; champion is not yet in "Selected Champions"
     await clickNode(page, champId)
     const expandedCount = await getNodeCount(page)
     expect(expandedCount).toBeLessThan(fullCount)
-    await expect(page.locator('aside').getByText('No champions selected')).toBeVisible()
+    await expect(row).toHaveAttribute('data-selected', 'false')
 
     // 2nd click: expanded → selected
-    // Champion now appears in "Selected Champions"; empty-state text disappears
     await clickNode(page, champId)
-    await expect(page.locator('aside').getByText('No champions selected')).not.toBeVisible()
+    await expect(row).toHaveAttribute('data-selected', 'true')
 
     // 3rd click: selected → unselected
-    // Empty-state text returns; all nodes visible again
     await clickNode(page, champId)
-    await expect(page.locator('aside').getByText('No champions selected')).toBeVisible()
+    await expect(row).toHaveAttribute('data-selected', 'false')
     expect(await getNodeCount(page)).toBe(fullCount)
   })
 })

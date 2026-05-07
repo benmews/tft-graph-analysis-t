@@ -1,6 +1,8 @@
 import {
   ArrowsLeftRight,
   ArrowsClockwise,
+  CaretDoubleLeft,
+  CaretDoubleRight,
   Graph,
   Lock,
   Plus,
@@ -23,11 +25,13 @@ export type DesktopHeaderProps = {
   layoutMode: LayoutMode
   fixedLayout: boolean
   useShortLabels: boolean
+  sidebarOpen: boolean
   onSetChange: (id: string) => void
   onModeToggle: () => void
   onLayoutToggle: () => void
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
+  onSidebarToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -39,18 +43,21 @@ export function DesktopHeader({
   layoutMode,
   fixedLayout,
   useShortLabels,
+  sidebarOpen,
   onSetChange,
   onModeToggle,
   onLayoutToggle,
   onFixedLayoutToggle,
   onLabelModeToggle,
+  onSidebarToggle,
   onExpandAll,
   onResetExpansions,
   onResetAll,
 }: DesktopHeaderProps) {
   return (
-    <div className="hidden flex-nowrap items-center gap-2 overflow-x-auto md:flex">
-      <Select value={currentSet.id} onValueChange={onSetChange}>
+    <div className="hidden items-center gap-2 md:flex">
+      <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto">
+        <Select value={currentSet.id} onValueChange={onSetChange}>
         <SelectTrigger className="h-10 w-[180px] shrink-0">
           <SelectValue placeholder="Select TFT Set" />
         </SelectTrigger>
@@ -106,6 +113,17 @@ export function DesktopHeader({
       <Button onClick={onResetAll} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
         <ArrowsClockwise weight="bold" />
         Reset All
+      </Button>
+      </div>
+
+      <Button
+        onClick={onSidebarToggle}
+        variant="outline"
+        className="h-10 shrink-0 gap-2 text-[0.95rem]"
+        aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+        title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+      >
+        {sidebarOpen ? <CaretDoubleRight /> : <CaretDoubleLeft />}
       </Button>
     </div>
   )

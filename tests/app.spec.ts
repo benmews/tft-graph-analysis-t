@@ -83,12 +83,22 @@ test.describe('Graph controls', () => {
     await expect.poll(() => getNodeCount(page)).toBeLessThan(nodesBefore)
   })
 
-  test('selected champion appears in Selected Champions card', async ({ page }) => {
-    await expect(page.locator('aside').getByText('No champions selected')).toBeVisible()
+  test('clicking a champion in the sidebar toggles its selected state', async ({ page }) => {
+    const firstRow = page
+      .locator('aside [data-testid^="champion-row-"]')
+      .first()
+    await expect(firstRow).toHaveAttribute('data-selected', 'false')
 
-    await page.locator('aside').getByRole('button').filter({ hasText: /\dg/ }).first().click()
+    await firstRow.click()
+    // After selection, that champion's row carries data-selected="true"
+    // (it may move to the top of the list, so re-locate by id).
+    const id = await firstRow.getAttribute('data-testid')
+    const rowAfter = page.locator(`aside [data-testid="${id}"]`)
+    await expect(rowAfter).toHaveAttribute('data-selected', 'true')
 
-    await expect(page.locator('aside').getByText('No champions selected')).not.toBeVisible()
+    // Clicking it again unselects
+    await rowAfter.click()
+    await expect(rowAfter).toHaveAttribute('data-selected', 'false')
   })
 })
 
