@@ -14,8 +14,8 @@ export function getViewportScale(): number {
 
 export function buildCytoscapeStyles(scale: number, largeLabels = false): any[] {
   const px = (n: number) => `${Math.round(n * scale)}px`
-  const baseFont = largeLabels ? 17 : 14
-  const pinnedFont = largeLabels ? 19 : 16
+  const baseFont = largeLabels ? 19 : 14
+  const pinnedFont = largeLabels ? 21 : 16
 
   return [
     {
