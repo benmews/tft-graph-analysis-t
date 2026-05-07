@@ -110,7 +110,26 @@ function App() {
     setExpandedNodes([])
     setSelectedChampions([])
   }
-  const handleExpandAll = () => setExpandedNodes(visibleNodes.map((n) => n.id))
+  const handleExpandAll = () => {
+    // Trait → total champions in the data, used to detect unique traits.
+    const traitChampCount = new Map<string, number>()
+    for (const c of currentSet.champions) {
+      for (const t of c.traits) {
+        traitChampCount.set(t, (traitChampCount.get(t) ?? 0) + 1)
+      }
+    }
+    const ids: string[] = []
+    for (const c of currentSet.champions) {
+      if (enabledCosts.has(c.cost)) ids.push(`champion-${c.id}`)
+    }
+    for (const t of currentSet.traits) {
+      const count = traitChampCount.get(t.id) ?? 0
+      if (count === 0) continue
+      if (!showUniqueTraits && count <= 1) continue
+      ids.push(`trait-${t.id}`)
+    }
+    setExpandedNodes(ids)
+  }
   const handleFixedLayoutToggle = () => setFixedLayout((v) => !v)
   const handleControlsToggle = () => {
     if (controlsOpen) setControlsOpen(false)
