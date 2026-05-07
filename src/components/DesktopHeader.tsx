@@ -73,11 +73,11 @@ export function DesktopHeader({
 
         <Button
           onClick={onLabelModeToggle}
-          variant="outline"
+          variant={useShortLabels ? 'default' : 'outline'}
           className="h-10 shrink-0 gap-2 text-[0.95rem]"
         >
           <TextAa weight={useShortLabels ? 'fill' : 'regular'} />
-          {useShortLabels ? 'Short labels' : 'Full labels'}
+          Short labels
         </Button>
 
         <div aria-hidden="true" className="mx-1 h-8 w-px shrink-0 bg-muted-foreground/30" />
