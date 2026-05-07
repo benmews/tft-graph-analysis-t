@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { getEdgeCount, getNodeCount, waitForGraph } from './helpers'
+import { getNodeCount, waitForGraph } from './helpers'
 
 // Force mobile viewport for every test in this file
 test.use({ viewport: { width: 412, height: 915 } })
@@ -23,10 +23,7 @@ test.describe('Mobile layout', () => {
     await expect(desktopSelect).not.toBeVisible()
   })
 
-  test('mobile mode buttons are visible', async ({ page }) => {
-    // Three mode/layout buttons appear in the mobile-only header
-    await expect(page.getByRole('button', { name: /Bipartite/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /Spring/i })).toBeVisible()
+  test('mobile fixed-layout button is visible', async ({ page }) => {
     await expect(page.getByRole('button', { name: /Fixed/i })).toBeVisible()
   })
 
@@ -90,24 +87,3 @@ test.describe('Controls drawer', () => {
   })
 })
 
-// ─── Mobile mode switching ───────────────────────────────────────────────────
-
-test.describe('Mobile mode and layout switching', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    await waitForGraph(page)
-  })
-
-  test('mode toggle changes edge count', async ({ page }) => {
-    const edgesBefore = await getEdgeCount(page)
-    await page.getByRole('button', { name: /Bipartite/i }).click()
-    await expect(page.getByRole('button', { name: /Trait Edges/i })).toBeVisible()
-
-    await expect.poll(() => getEdgeCount(page)).not.toBe(edgesBefore)
-  })
-
-  test('layout toggle flips button label', async ({ page }) => {
-    await page.getByRole('button', { name: /Spring/i }).click()
-    await expect(page.getByRole('button', { name: /Hier/i })).toBeVisible()
-  })
-})

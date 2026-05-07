@@ -9,14 +9,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from './components/ui/drawer'
-import { computeVisibleNodes, generateBipartiteGraph, generateTraitEdgeGraph } from './lib/graph-utils'
+import { computeVisibleNodes, generateBipartiteGraph } from './lib/graph-utils'
 import { set17, tftSets } from './lib/tft-data'
-import type { LayoutMode, TFTSet, VisualizationMode } from './lib/types'
+import type { TFTSet } from './lib/types'
 
 function App() {
   const [currentSet, setCurrentSet] = useState<TFTSet>(set17)
-  const [mode, setMode] = useState<VisualizationMode>('bipartite')
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('spring')
   const [selectedChampions, setSelectedChampions] = useState<string[]>([])
   const [expandedNodes, setExpandedNodes] = useState<string[]>([])
   const [fixedLayout, setFixedLayout] = useState(true)
@@ -41,14 +39,13 @@ function App() {
   }, [])
 
   const { nodes: allNodes, edges: allEdges } = useMemo(
-    () => (mode === 'bipartite' ? generateBipartiteGraph(currentSet) : generateTraitEdgeGraph(currentSet)),
-    [mode, currentSet],
+    () => generateBipartiteGraph(currentSet),
+    [currentSet],
   )
 
   const visibleNodes = useMemo(
     () =>
       computeVisibleNodes(allNodes, allEdges, {
-        mode,
         selectedChampions,
         expandedNodes,
         enabledCosts,
@@ -59,7 +56,6 @@ function App() {
     [
       allNodes,
       allEdges,
-      mode,
       selectedChampions,
       expandedNodes,
       enabledCosts,
@@ -114,9 +110,6 @@ function App() {
     setSelectedChampions([])
   }
   const handleExpandAll = () => setExpandedNodes(visibleNodes.map((n) => n.id))
-  const handleModeToggle = () => setMode((m) => (m === 'bipartite' ? 'traits-as-edges' : 'bipartite'))
-  const handleLayoutToggle = () =>
-    setLayoutMode((l) => (l === 'hierarchical' ? 'spring' : 'hierarchical'))
   const handleFixedLayoutToggle = () => setFixedLayout((v) => !v)
   const handleControlsToggle = () => {
     if (controlsOpen) setControlsOpen(false)
@@ -189,14 +182,10 @@ function App() {
 
   const headerProps = {
     currentSet,
-    mode,
-    layoutMode,
     fixedLayout,
     useShortLabels,
     sidebarOpen,
     onSetChange: handleSetChange,
-    onModeToggle: handleModeToggle,
-    onLayoutToggle: handleLayoutToggle,
     onFixedLayoutToggle: handleFixedLayoutToggle,
     onLabelModeToggle: handleLabelModeToggle,
     onSidebarToggle: handleSidebarToggle,
@@ -218,8 +207,6 @@ function App() {
             nodes={displayNodes}
             edges={visibleEdges}
             set={currentSet}
-            mode={mode}
-            layoutMode={layoutMode}
             onNodeClick={handleNodeClick}
             selectedNodes={selectedChampions.map((id) => `champion-${id}`)}
             expandedNodes={expandedNodes}

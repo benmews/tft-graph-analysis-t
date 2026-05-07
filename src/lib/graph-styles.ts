@@ -6,8 +6,6 @@
  * tappable; desktop and above use the full design size).
  */
 
-import type { LayoutMode } from './types'
-
 export function getViewportScale(): number {
   return Math.min(1, Math.max(0.55, window.innerWidth / 768))
 }
@@ -102,27 +100,18 @@ export function initialLayoutOptions(scale: number) {
   }
 }
 
-/** Layout used for re-runs after structural changes (tighter edges). */
-export function relayoutOptions(scale: number, layoutMode: LayoutMode) {
-  if (layoutMode === 'spring') {
-    return {
-      name: 'cose',
-      animate: true,
-      animationDuration: 400,
-      nodeRepulsion: 2000,
-      idealEdgeLength: Math.round(120 * scale),
-      edgeElasticity: 100,
-      nestingFactor: 1.2,
-      gravity: 1,
-      numIter: 1000,
-      randomize: false,
-    }
-  }
+/** Layout used for re-runs after structural changes (tighter edges than initial). */
+export function relayoutOptions(scale: number) {
   return {
-    name: 'breadthfirst',
-    directed: false,
-    spacingFactor: 1.0,
+    name: 'cose',
     animate: true,
     animationDuration: 400,
+    nodeRepulsion: 2000,
+    idealEdgeLength: Math.round(120 * scale),
+    edgeElasticity: 100,
+    nestingFactor: 1.2,
+    gravity: 1,
+    numIter: 1000,
+    randomize: false,
   }
 }

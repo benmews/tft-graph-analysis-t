@@ -1,4 +1,4 @@
-import { TFTSet, GraphNode, GraphEdge, VisualizationMode, TraitCategory } from './types'
+import { TFTSet, GraphNode, GraphEdge } from './types'
 
 export function getChampionColorByCost(cost: number): string {
   /**
@@ -53,49 +53,6 @@ export function generateBipartiteGraph(tftSet: TFTSet): { nodes: GraphNode[]; ed
   return { nodes, edges }
 }
 
-export function generateTraitEdgeGraph(tftSet: TFTSet): { nodes: GraphNode[]; edges: GraphEdge[] } {
-  const nodes: GraphNode[] = []
-  const edges: GraphEdge[] = []
-
-  tftSet.champions.forEach((champion) => {
-    nodes.push({
-      id: `champion-${champion.id}`,
-      type: 'champion',
-      label: champion.name,
-      shortLabel: champion.shortLabel,
-      cost: champion.cost,
-      color: getChampionColorByCost(champion.cost),
-    })
-  })
-
-  const championsByTrait = new Map<string, string[]>()
-  tftSet.champions.forEach((champion) => {
-    champion.traits.forEach((traitId) => {
-      if (!championsByTrait.has(traitId)) championsByTrait.set(traitId, [])
-      championsByTrait.get(traitId)!.push(champion.id)
-    })
-  })
-
-  const seen = new Set<string>()
-  championsByTrait.forEach((champions, traitId) => {
-    for (let i = 0; i < champions.length; i++) {
-      for (let j = i + 1; j < champions.length; j++) {
-        const [a, b] = [champions[i], champions[j]].sort()
-        const key = `${a}-${b}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        edges.push({
-          id: `edge-${a}-${b}-${traitId}`,
-          source: `champion-${a}`,
-          target: `champion-${b}`,
-        })
-      }
-    }
-  })
-
-  return { nodes, edges }
-}
-
 export function findNeighbors(nodeId: string, edges: GraphEdge[], hops = 1): Set<string> {
   const neighbors = new Set<string>()
   const visited = new Set<string>([nodeId])
@@ -121,7 +78,6 @@ export function findNeighbors(nodeId: string, edges: GraphEdge[], hops = 1): Set
 }
 
 export type VisibilityOptions = {
-  mode: VisualizationMode
   selectedChampions: string[]
   expandedNodes: string[]
   enabledCosts: Set<number>
@@ -140,12 +96,10 @@ export type VisibilityOptions = {
  *  - With nothing selected/expanded:
  *      fixedLayout=true  → show every filtered node
  *      fixedLayout=false → show the first 15 (preview)
- *  - Selected champion: show its 2-hop neighborhood (1-hop in trait-edges
- *    mode), plus any "circle trait" that connects two of those revealed
- *    champions but isn't directly the selected champion's trait.
+ *  - Selected or expanded champion: show its 2-hop neighborhood plus any
+ *    "circle trait" that connects two of those revealed champions but
+ *    isn't one of the champion's own traits.
  *  - Expanded trait: show the trait + its champion neighbors.
- *  - Expanded champion: show the champion + its traits, and (in bipartite
- *    mode only) every other champion that shares any of those traits.
  */
 export function computeVisibleNodes(
   allNodes: GraphNode[],
@@ -153,7 +107,6 @@ export function computeVisibleNodes(
   opts: VisibilityOptions,
 ): GraphNode[] {
   const {
-    mode,
     selectedChampions,
     expandedNodes,
     enabledCosts,
@@ -232,19 +185,18 @@ export function computeVisibleNodes(
   const visible = new Set<string>()
 
   selectedChampions.forEach((champId) => {
-    revealChampionNeighborhood(`champion-${champId}`, mode, allEdges, visible)
+    revealChampionNeighborhood(`champion-${champId}`, allEdges, visible)
   })
 
   expandedNodes.forEach((nodeId) => {
     visible.add(nodeId)
 
     if (nodeId.startsWith('trait-')) {
-      // Bipartite-only path: reveal the trait's champions (distance 1).
       findNeighbors(nodeId, allEdges, 1).forEach((n) => {
         if (n.startsWith('champion-')) visible.add(n)
       })
     } else if (nodeId.startsWith('champion-')) {
-      revealChampionNeighborhood(nodeId, mode, allEdges, visible)
+      revealChampionNeighborhood(nodeId, allEdges, visible)
     }
   })
 
@@ -257,50 +209,19 @@ export function computeVisibleNodes(
 
 /**
  * Reveal the neighborhood of a champion node (used for both selection and
- * expansion, in both visualization modes).
- *
- *   bipartite:    distance ≤ 2 plus any trait that lies on a 6-cycle through x
- *                 (i.e. a trait shared by two of x's 2-hop champion neighbours
- *                 that x itself doesn't carry).
- *   trait-edges:  distance ≤ 1 plus any champion that lies on a 4-cycle
- *                 through x (i.e. a champion connected to two distinct
- *                 1-hop neighbours of x).
+ * expansion). Distance ≤ 2 plus any trait that lies on a 6-cycle through x
+ * (a trait shared by two of x's 2-hop champion neighbours that x itself
+ * doesn't carry).
  */
 function revealChampionNeighborhood(
   champNodeId: string,
-  mode: VisualizationMode,
   allEdges: GraphEdge[],
   visible: Set<string>,
 ) {
   visible.add(champNodeId)
-
-  if (mode === 'bipartite') {
-    const neighborhood = findNeighbors(champNodeId, allEdges, 2)
-    neighborhood.forEach((n) => visible.add(n))
-    addCircleTraits(neighborhood, allEdges, visible)
-    return
-  }
-
-  // trait-edges
-  const direct = findNeighbors(champNodeId, allEdges, 1)
-  direct.forEach((n) => visible.add(n))
-
-  // Any champion sharing two distinct neighbours with x sits on a 4-cycle.
-  // Build a frequency map: distance-2 champion → number of distinct 1-hop
-  // neighbours of x that connect to it.
-  const directList = Array.from(direct)
-  const counts = new Map<string, number>()
-  for (const y of directList) {
-    const yNeighbors = findNeighbors(y, allEdges, 1)
-    for (const z of yNeighbors) {
-      if (z === champNodeId) continue
-      if (direct.has(z)) continue
-      counts.set(z, (counts.get(z) ?? 0) + 1)
-    }
-  }
-  for (const [z, c] of counts) {
-    if (c >= 2) visible.add(z)
-  }
+  const neighborhood = findNeighbors(champNodeId, allEdges, 2)
+  neighborhood.forEach((n) => visible.add(n))
+  addCircleTraits(neighborhood, allEdges, visible)
 }
 
 /**
@@ -348,107 +269,3 @@ function addCircleTraits(
   }
 }
 
-/**
- * Layered hierarchical layout. Five rows (top → bottom):
- *   origin  ·  champion (multi-trait)  ·  class
- *   champion (single-trait)  ·  unique-trait (origin + class merged)
- *
- * Within each row, nodes are distributed evenly. The multi-trait champion
- * row is ordered by the mean x of its adjacent origin/class traits to
- * reduce crossings (champions sit roughly under their origin and above
- * their class). The single-trait champion row is ordered by the x of its
- * one unique trait below, so each champion sits directly above it.
- */
-const LAYER_Y = {
-  origin: 0,
-  'champion-multi': 350,
-  class: 700,
-  'champion-unique': 1050,
-  'unique-trait': 1400,
-} as const
-
-const LAYER_WIDTH = 4800
-
-export function computeHierarchicalPositions(
-  set: TFTSet,
-  visibleNodes: GraphNode[],
-): Map<string, { x: number; y: number }> {
-  const traitsById = new Map(set.traits.map((t) => [t.id, t]))
-  const categoryOf = (rawId: string): TraitCategory => {
-    const id = rawId.replace('trait-', '')
-    return traitsById.get(id)?.category ?? 'class'
-  }
-
-  const championById = new Map(set.champions.map((c) => [c.id, c]))
-  const championOf = (rawId: string) => championById.get(rawId.replace('champion-', ''))
-
-  const buckets: Record<keyof typeof LAYER_Y, GraphNode[]> = {
-    origin: [],
-    'champion-multi': [],
-    class: [],
-    'champion-unique': [],
-    'unique-trait': [],
-  }
-
-  for (const node of visibleNodes) {
-    if (node.type === 'champion') {
-      const champ = championOf(node.id)
-      const isUnique = (champ?.traits.length ?? 0) <= 1
-      buckets[isUnique ? 'champion-unique' : 'champion-multi'].push(node)
-      continue
-    }
-    const cat = categoryOf(node.id)
-    if (cat === 'origin') buckets.origin.push(node)
-    else if (cat === 'class') buckets.class.push(node)
-    else buckets['unique-trait'].push(node)
-  }
-
-  const positions = new Map<string, { x: number; y: number }>()
-
-  // Lay out the trait rows alphabetically first so champions can lean
-  // against stable x positions.
-  const traitRows: Array<keyof typeof LAYER_Y> = ['origin', 'class', 'unique-trait']
-  for (const row of traitRows) {
-    const list = buckets[row].slice().sort((a, b) => a.label.localeCompare(b.label))
-    if (list.length === 0) continue
-    const step = LAYER_WIDTH / (list.length + 1)
-    list.forEach((node, i) => {
-      positions.set(node.id, { x: step * (i + 1), y: LAYER_Y[row] })
-    })
-  }
-
-  // Multi-trait champions: order by mean x of all adjacent traits.
-  const champXFromTraits = (champNode: GraphNode): number => {
-    const champ = championOf(champNode.id)
-    if (!champ) return Number.POSITIVE_INFINITY
-    const xs = champ.traits
-      .map((tid) => positions.get(`trait-${tid}`))
-      .filter((p): p is { x: number; y: number } => !!p)
-      .map((p) => p.x)
-    if (xs.length === 0) return Number.POSITIVE_INFINITY
-    return xs.reduce((a, b) => a + b, 0) / xs.length
-  }
-
-  const placeRow = (row: keyof typeof LAYER_Y, ordering: GraphNode[]) => {
-    if (ordering.length === 0) return
-    const step = LAYER_WIDTH / (ordering.length + 1)
-    ordering.forEach((node, i) => {
-      positions.set(node.id, { x: step * (i + 1), y: LAYER_Y[row] })
-    })
-  }
-
-  const orderedMulti = buckets['champion-multi']
-    .map((c) => ({ node: c, x: champXFromTraits(c) }))
-    .sort((a, b) => a.x - b.x || a.node.label.localeCompare(b.node.label))
-    .map((entry) => entry.node)
-  placeRow('champion-multi', orderedMulti)
-
-  // Single-trait champions: order by the x of their (one) unique trait.
-  const orderedUnique = buckets['champion-unique']
-    .map((c) => ({ node: c, x: champXFromTraits(c) }))
-    .sort((a, b) => a.x - b.x || a.node.label.localeCompare(b.node.label))
-    .map((entry) => entry.node)
-  placeRow('champion-unique', orderedUnique)
-
-  return positions
-}

@@ -7,16 +7,13 @@ import {
   initialLayoutOptions,
   relayoutOptions,
 } from '@/lib/graph-styles'
-import { getBakedLayout, makeBakedLayoutKey } from '@/lib/baked-layouts'
-import { computeHierarchicalPositions } from '@/lib/graph-utils'
-import type { GraphEdge, GraphNode, LayoutMode, TFTSet, VisualizationMode } from '@/lib/types'
+import { getBakedLayout } from '@/lib/baked-layouts'
+import type { GraphEdge, GraphNode, TFTSet } from '@/lib/types'
 
 interface GraphVisualizationProps {
   nodes: GraphNode[]
   edges: GraphEdge[]
   set: TFTSet
-  mode: VisualizationMode
-  layoutMode: LayoutMode
   onNodeClick?: (nodeId: string) => void
   onNodeHover?: (nodeId: string | null) => void
   selectedNodes?: string[]
@@ -38,8 +35,6 @@ export function GraphVisualization({
   nodes,
   edges,
   set,
-  mode,
-  layoutMode,
   onNodeClick,
   onNodeHover,
   selectedNodes = [],
@@ -63,7 +58,6 @@ export function GraphVisualization({
   // Track structural state from the previous render so we know when to relayout.
   const previousNodesKeyRef = useRef('')
   const previousEdgesKeyRef = useRef('')
-  const previousLayoutModeRef = useRef<LayoutMode>(layoutMode)
   const fixedPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map())
   const savedViewportRef = useRef<Viewport | null>(null)
 
@@ -123,7 +117,7 @@ export function GraphVisualization({
     cy.style(buildCytoscapeStyles(getViewportScale(), largeLabels) as any)
   }, [largeLabels, isInitialized])
 
-  // ── 1c. Dev hook: print current node positions for baked-layouts.ts ───────
+  // ── 1c. Dev hook: print current node positions for baked-layouts.json ─────
   useEffect(() => {
     if (!import.meta.env.DEV) return
     ;(window as any).__bakeLayout = () => {
@@ -134,9 +128,7 @@ export function GraphVisualization({
         x: Math.round(n.position('x') * 100) / 100,
         y: Math.round(n.position('y') * 100) / 100,
       }))
-      const key = makeBakedLayoutKey(set.id, mode, layoutMode)
-      // JSON entry — paste this as a key/value into baked-layouts.json.
-      const snippet = `${JSON.stringify(key)}: ${JSON.stringify(positions)}`
+      const snippet = `${JSON.stringify(set.id)}: ${JSON.stringify(positions)}`
       // eslint-disable-next-line no-console
       console.log(snippet)
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -144,7 +136,7 @@ export function GraphVisualization({
       }
       return snippet
     }
-  }, [set.id, mode, layoutMode, isInitialized])
+  }, [set.id, isInitialized])
 
   // ── 2. Re-fit on container resize (orientation flip / browser chrome) ─────
   useEffect(() => {
@@ -180,10 +172,9 @@ export function GraphVisualization({
     const edgesKey = edges.map((e) => `${e.source}-${e.target}`).sort().join(',')
     const structureChanged =
       previousNodesKeyRef.current !== nodesKey || previousEdgesKeyRef.current !== edgesKey
-    const layoutModeChanged = previousLayoutModeRef.current !== layoutMode
 
     // Cheap path: structure unchanged → just sync the pinned/expanded classes.
-    if (!structureChanged && !layoutModeChanged) {
+    if (!structureChanged) {
       nodes.forEach((node) => {
         const cyNode = cy.getElementById(node.id)
         if (cyNode.length > 0) cyNode.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes))
@@ -191,11 +182,8 @@ export function GraphVisualization({
       return
     }
 
-    // Save the user's current zoom/pan if we're rebuilding the same layout
-    // (so we can restore it after structure changes mid-session).
-    if (structureChanged && !layoutModeChanged) {
-      savedViewportRef.current = { zoom: cy.zoom(), pan: cy.pan() }
-    }
+    // Save the user's current zoom/pan so we can restore it after structure changes.
+    savedViewportRef.current = { zoom: cy.zoom(), pan: cy.pan() }
 
     cy.elements().remove()
     cy.add([
@@ -215,7 +203,7 @@ export function GraphVisualization({
     ])
 
     const restoreOrFit = () => {
-      if (savedViewportRef.current && structureChanged && !layoutModeChanged) {
+      if (savedViewportRef.current) {
         cy.viewport(savedViewportRef.current)
       } else if (nodes.length > 0) {
         cy.fit(undefined, 50)
@@ -224,9 +212,8 @@ export function GraphVisualization({
 
     // Prefer baked positions when available — every visitor sees the same
     // layout that was captured at build time.
-    const baked = fixedLayout ? getBakedLayout(set.id, mode, layoutMode) : null
+    const baked = fixedLayout ? getBakedLayout(set.id) : null
     if (baked) {
-      // Seed the fixed-positions ref so future structure changes also reuse it.
       baked.forEach((pos, id) => fixedPositionsRef.current.set(id, pos))
       const layout = cy.layout({
         name: 'preset',
@@ -236,8 +223,7 @@ export function GraphVisualization({
       } as any)
       layout.run()
       restoreOrFit()
-    } else if (fixedLayout && !layoutModeChanged && fixedPositionsRef.current.size > 0) {
-      // Reuse previously-computed positions instead of re-laying out the graph.
+    } else if (fixedLayout && fixedPositionsRef.current.size > 0) {
       nodes.forEach((node) => {
         const pos = fixedPositionsRef.current.get(node.id)
         if (pos) {
@@ -246,20 +232,8 @@ export function GraphVisualization({
         }
       })
       restoreOrFit()
-    } else if (layoutMode === 'hierarchical') {
-      // Custom 5-row layered layout: origin / champion / class / unique-origin / unique-class
-      const positions = computeHierarchicalPositions(set, nodes)
-      positions.forEach((pos, id) => fixedPositionsRef.current.set(id, pos))
-      const layout = cy.layout({
-        name: 'preset',
-        positions: (node: any) => positions.get(node.id()),
-        fit: false,
-        animate: false,
-      } as any)
-      layout.run()
-      restoreOrFit()
     } else {
-      const layout = cy.layout(relayoutOptions(getViewportScale(), layoutMode) as any)
+      const layout = cy.layout(relayoutOptions(getViewportScale()) as any)
       layout.run()
 
       if (fixedLayout) {
@@ -271,9 +245,7 @@ export function GraphVisualization({
         })
       }
 
-      // For the relayout path, restoring the viewport waits for layoutstop
-      // (the layout animation moves nodes after this function returns).
-      if (savedViewportRef.current && structureChanged && !layoutModeChanged) {
+      if (savedViewportRef.current) {
         const saved = savedViewportRef.current
         layout.on('layoutstop', () => cy.viewport(saved))
       } else if (nodes.length > 0) {
@@ -283,8 +255,7 @@ export function GraphVisualization({
 
     previousNodesKeyRef.current = nodesKey
     previousEdgesKeyRef.current = edgesKey
-    previousLayoutModeRef.current = layoutMode
-  }, [nodes, edges, set, mode, layoutMode, selectedNodes, expandedNodes, isInitialized, fixedLayout])
+  }, [nodes, edges, set, selectedNodes, expandedNodes, isInitialized, fixedLayout])
 
   return (
     <div

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { getEdgeCount, getNodeCount, waitForGraph } from './helpers'
+import { getNodeCount, waitForGraph } from './helpers'
 
 test.use({ viewport: { width: 1280, height: 720 } })
 
@@ -27,23 +27,6 @@ test.describe('Graph controls', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await waitForGraph(page)
-  })
-
-  test('switching mode changes edge count', async ({ page }) => {
-    const edgesBefore = await getEdgeCount(page)
-    await page.locator('header').getByRole('button', { name: /Bipartite/i }).click()
-    await expect(page.locator('header').getByRole('button', { name: /Trait Edges/i })).toBeVisible()
-
-    await expect.poll(() => getEdgeCount(page)).not.toBe(edgesBefore)
-  })
-
-  test('switching layout mode works without crashing', async ({ page }) => {
-    const nodesBefore = await getNodeCount(page)
-
-    await page.locator('header').getByRole('button', { name: /Spring/i }).click()
-    await expect(page.locator('header').getByRole('button', { name: /Hierarchical/i })).toBeVisible()
-
-    expect(await getNodeCount(page)).toBe(nodesBefore)
   })
 
   test('unlocking fixed layout reduces visible nodes to 15', async ({ page }) => {

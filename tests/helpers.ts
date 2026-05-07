@@ -14,7 +14,3 @@ export async function waitForGraph(page: Page) {
 export async function getNodeCount(page: Page): Promise<number> {
   return page.evaluate(() => (window as any).__cy.nodes().length)
 }
-
-export async function getEdgeCount(page: Page): Promise<number> {
-  return page.evaluate(() => (window as any).__cy.edges().length)
-}

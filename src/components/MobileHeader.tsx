@@ -1,5 +1,4 @@
 import {
-  ArrowsLeftRight,
   ArrowsClockwise,
   Graph,
   List,
@@ -24,19 +23,15 @@ import {
   SelectValue,
 } from './ui/select'
 import { tftSets } from '../lib/tft-data'
-import type { LayoutMode, TFTSet, VisualizationMode } from '../lib/types'
+import type { TFTSet } from '../lib/types'
 
 export type MobileHeaderProps = {
   currentSet: TFTSet
-  mode: VisualizationMode
-  layoutMode: LayoutMode
   fixedLayout: boolean
   useShortLabels: boolean
   sidebarOpen: boolean
   controlsOpen: boolean
   onSetChange: (id: string) => void
-  onModeToggle: () => void
-  onLayoutToggle: () => void
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
   onSidebarToggle: () => void
@@ -48,14 +43,10 @@ export type MobileHeaderProps = {
 
 export function MobileHeader({
   currentSet,
-  mode,
-  layoutMode,
   fixedLayout,
   useShortLabels,
   controlsOpen,
   onSetChange,
-  onModeToggle,
-  onLayoutToggle,
   onFixedLayoutToggle,
   onLabelModeToggle,
   onExpandAll,
@@ -148,28 +139,6 @@ export function MobileHeader({
       </Select>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          onClick={onModeToggle}
-          variant="outline"
-          className="coarse:min-h-11 min-w-[4.5rem] flex-1 gap-2 sm:flex-none"
-          title={mode === 'bipartite' ? 'Bipartite graph' : 'Trait edges'}
-        >
-          <ArrowsLeftRight className="size-5 shrink-0" />
-          <span className="truncate">{mode === 'bipartite' ? 'Bipartite' : 'Trait edges'}</span>
-        </Button>
-        <Button
-          type="button"
-          onClick={onLayoutToggle}
-          variant="outline"
-          className="coarse:min-h-11 min-w-[4.5rem] flex-1 gap-2 sm:flex-none"
-          title={layoutMode === 'hierarchical' ? 'Hierarchical layout' : 'Spring layout'}
-        >
-          <Graph weight="duotone" className="size-5 shrink-0" />
-          <span className="truncate">
-            {layoutMode === 'hierarchical' ? 'Hierarchy' : 'Spring'}
-          </span>
-        </Button>
         <Button
           type="button"
           onClick={onFixedLayoutToggle}
