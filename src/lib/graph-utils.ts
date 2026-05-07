@@ -350,20 +350,22 @@ function addCircleTraits(
 
 /**
  * Layered hierarchical layout. Five rows (top → bottom):
- *   origin  ·  champion  ·  class  ·  unique-origin  ·  unique-class
+ *   origin  ·  champion (multi-trait)  ·  class
+ *   champion (single-trait)  ·  unique-trait (origin + class merged)
  *
- * Within each row, nodes are distributed evenly. Champions are ordered by
- * the average x of their adjacent origin/class trait nodes, which gives a
- * crude crossing-reduction (champions sit roughly under their origin and
- * above their class).
+ * Within each row, nodes are distributed evenly. The multi-trait champion
+ * row is ordered by the mean x of its adjacent origin/class traits to
+ * reduce crossings (champions sit roughly under their origin and above
+ * their class). The single-trait champion row is ordered by the x of its
+ * one unique trait below, so each champion sits directly above it.
  */
 const LAYER_Y = {
   origin: 0,
-  champion: 350,
+  'champion-multi': 350,
   class: 700,
-  'unique-origin': 1050,
-  'unique-class': 1400,
-} as const satisfies Record<TraitCategory | 'champion', number>
+  'champion-unique': 1050,
+  'unique-trait': 1400,
+} as const
 
 const LAYER_WIDTH = 4800
 
@@ -377,29 +379,35 @@ export function computeHierarchicalPositions(
     return traitsById.get(id)?.category ?? 'class'
   }
 
+  const championById = new Map(set.champions.map((c) => [c.id, c]))
+  const championOf = (rawId: string) => championById.get(rawId.replace('champion-', ''))
+
   const buckets: Record<keyof typeof LAYER_Y, GraphNode[]> = {
     origin: [],
-    champion: [],
+    'champion-multi': [],
     class: [],
-    'unique-origin': [],
-    'unique-class': [],
+    'champion-unique': [],
+    'unique-trait': [],
   }
 
   for (const node of visibleNodes) {
-    if (node.type === 'champion') buckets.champion.push(node)
-    else buckets[categoryOf(node.id)].push(node)
+    if (node.type === 'champion') {
+      const champ = championOf(node.id)
+      const isUnique = (champ?.traits.length ?? 0) <= 1
+      buckets[isUnique ? 'champion-unique' : 'champion-multi'].push(node)
+      continue
+    }
+    const cat = categoryOf(node.id)
+    if (cat === 'origin') buckets.origin.push(node)
+    else if (cat === 'class') buckets.class.push(node)
+    else buckets['unique-trait'].push(node)
   }
 
   const positions = new Map<string, { x: number; y: number }>()
 
-  // Lay out the trait rows alphabetically first, so we have a stable x for
-  // each trait that the champion ordering can lean against.
-  const traitRows: Array<keyof typeof LAYER_Y> = [
-    'origin',
-    'class',
-    'unique-origin',
-    'unique-class',
-  ]
+  // Lay out the trait rows alphabetically first so champions can lean
+  // against stable x positions.
+  const traitRows: Array<keyof typeof LAYER_Y> = ['origin', 'class', 'unique-trait']
   for (const row of traitRows) {
     const list = buckets[row].slice().sort((a, b) => a.label.localeCompare(b.label))
     if (list.length === 0) continue
@@ -409,30 +417,38 @@ export function computeHierarchicalPositions(
     })
   }
 
-  // Champion row: order by mean x of adjacent origin/class trait nodes.
-  // Champions with no positioned trait fall back to alphabetical order at the
-  // end of the row (still deterministic).
-  const champions = buckets.champion
-  const championX = (champ: GraphNode): number => {
-    const traits = set.champions.find((c) => c.id === champ.id.replace('champion-', ''))?.traits ?? []
-    const xs = traits
+  // Multi-trait champions: order by mean x of all adjacent traits.
+  const champXFromTraits = (champNode: GraphNode): number => {
+    const champ = championOf(champNode.id)
+    if (!champ) return Number.POSITIVE_INFINITY
+    const xs = champ.traits
       .map((tid) => positions.get(`trait-${tid}`))
       .filter((p): p is { x: number; y: number } => !!p)
       .map((p) => p.x)
     if (xs.length === 0) return Number.POSITIVE_INFINITY
     return xs.reduce((a, b) => a + b, 0) / xs.length
   }
-  const orderedChampions = champions
-    .map((c) => ({ node: c, x: championX(c) }))
-    .sort((a, b) => a.x - b.x || a.node.label.localeCompare(b.node.label))
-    .map((entry) => entry.node)
 
-  if (orderedChampions.length > 0) {
-    const step = LAYER_WIDTH / (orderedChampions.length + 1)
-    orderedChampions.forEach((node, i) => {
-      positions.set(node.id, { x: step * (i + 1), y: LAYER_Y.champion })
+  const placeRow = (row: keyof typeof LAYER_Y, ordering: GraphNode[]) => {
+    if (ordering.length === 0) return
+    const step = LAYER_WIDTH / (ordering.length + 1)
+    ordering.forEach((node, i) => {
+      positions.set(node.id, { x: step * (i + 1), y: LAYER_Y[row] })
     })
   }
+
+  const orderedMulti = buckets['champion-multi']
+    .map((c) => ({ node: c, x: champXFromTraits(c) }))
+    .sort((a, b) => a.x - b.x || a.node.label.localeCompare(b.node.label))
+    .map((entry) => entry.node)
+  placeRow('champion-multi', orderedMulti)
+
+  // Single-trait champions: order by the x of their (one) unique trait.
+  const orderedUnique = buckets['champion-unique']
+    .map((c) => ({ node: c, x: champXFromTraits(c) }))
+    .sort((a, b) => a.x - b.x || a.node.label.localeCompare(b.node.label))
+    .map((entry) => entry.node)
+  placeRow('champion-unique', orderedUnique)
 
   return positions
 }
