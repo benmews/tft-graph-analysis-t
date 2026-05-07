@@ -44,7 +44,7 @@ export function ControlsPanel({
   selectedChampions,
   onToggleChampion,
 }: ControlsPanelProps) {
-  const activatedTraits = useMemo(() => {
+  const traitProgress = useMemo(() => {
     const counts = new Map<string, number>()
     for (const node of selectedChampionNodes) {
       const champion = currentSet.champions.find(
@@ -60,13 +60,21 @@ export function ControlsPanel({
         const trait = currentSet.traits.find((t) => t.id === traitId)
         if (!trait) return null
         const breakpoints = getTraitBreakpoints(trait)
-        return { trait, count, breakpoints }
+        return { trait, count, breakpoints, isActivated: count >= breakpoints[0] }
       })
       .filter(
-        (entry): entry is { trait: NonNullable<typeof entry>['trait']; count: number; breakpoints: readonly number[] } =>
-          !!entry && entry.count >= entry.breakpoints[0],
+        (entry): entry is {
+          trait: NonNullable<typeof entry>['trait']
+          count: number
+          breakpoints: readonly number[]
+          isActivated: boolean
+        } => !!entry,
       )
-      .sort((a, b) => b.count - a.count || a.trait.name.localeCompare(b.trait.name))
+      .sort((a, b) => {
+        // Activated first, then by count desc, then alphabetical.
+        if (a.isActivated !== b.isActivated) return a.isActivated ? -1 : 1
+        return b.count - a.count || a.trait.name.localeCompare(b.trait.name)
+      })
   }, [selectedChampionNodes, currentSet])
 
   return (
@@ -103,22 +111,24 @@ export function ControlsPanel({
           </CardContent>
         </Card>
 
-        <Card data-testid="activated-traits-card">
+        <Card data-testid="traits-card">
           <CardHeader>
-            <CardTitle className="text-base">Activated Traits</CardTitle>
+            <CardTitle className="text-base">Traits</CardTitle>
           </CardHeader>
           <CardContent>
-            {activatedTraits.length > 0 ? (
+            {traitProgress.length > 0 ? (
               <div className="space-y-1.5">
-                {activatedTraits.map(({ trait, count, breakpoints }) => (
+                {traitProgress.map(({ trait, count, breakpoints, isActivated }) => (
                   <div
                     key={trait.id}
                     data-testid={`activated-trait-${trait.id}`}
-                    className="flex items-center gap-2"
+                    data-activated={isActivated ? 'true' : 'false'}
+                    className={`flex items-center gap-2 ${isActivated ? '' : 'opacity-60'}`}
                   >
                     <Badge
                       className="gap-1.5 text-xs"
                       style={{ backgroundColor: trait.color }}
+                      variant={isActivated ? 'default' : 'outline'}
                     >
                       <span>{trait.name}</span>
                       <span
@@ -151,7 +161,7 @@ export function ControlsPanel({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No traits activated</p>
+              <p className="text-sm text-muted-foreground">Select a champion to see traits</p>
             )}
           </CardContent>
         </Card>

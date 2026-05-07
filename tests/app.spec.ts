@@ -92,7 +92,7 @@ test.describe('Graph controls', () => {
   })
 })
 
-test.describe('Activated Traits', () => {
+test.describe('Traits', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await waitForGraph(page)
@@ -100,19 +100,17 @@ test.describe('Activated Traits', () => {
 
   test('shows empty-state copy with no champions selected', async ({ page }) => {
     await expect(
-      page.locator('aside').getByText('No traits activated'),
+      page.locator('[data-testid="traits-card"]').getByText('Select a champion to see traits'),
     ).toBeVisible()
   })
 
-  test('a single champion never activates a trait (count must be > 1)', async ({ page }) => {
+  test('a single champion surfaces its traits as in-progress (not activated)', async ({ page }) => {
     await page.locator('aside').getByRole('button').filter({ hasText: /\dg/ }).first().click()
-    await expect(
-      page.locator('aside').getByText('No champions selected'),
-    ).not.toBeVisible()
-    // Even with 1 champion selected, no trait reaches the count > 1 threshold.
-    await expect(
-      page.locator('aside').getByText('No traits activated'),
-    ).toBeVisible()
+
+    // Count > 0 traits should be visible, but they must be marked not-activated
+    // unless the trait's first breakpoint is 1 (uniques).
+    const inProgress = page.locator('aside [data-testid^="activated-trait-"][data-activated="false"]')
+    await expect(inProgress.first()).toBeVisible()
   })
 
   test('selecting two champions sharing a trait surfaces it with count 2', async ({ page }) => {
@@ -144,19 +142,21 @@ test.describe('Activated Traits', () => {
       page.locator('aside').getByTestId(`activated-trait-count-${target.traitId}`),
     ).toHaveText('2')
 
-    // Breakpoint indicators: default [2, 4, 6]. With count=2 the first should
-    // be marked active and the others inactive.
+    // Breakpoint indicators: each <span>'s data-active should equal `count >= bp`,
+    // regardless of the trait's specific breakpoint set.
     const breakpoints = page
       .locator('aside')
       .getByTestId(`activated-trait-breakpoints-${target.traitId}`)
     await expect(breakpoints).toBeVisible()
     const states = await breakpoints.locator('span').evaluateAll((els) =>
-      els.map((el) => ({ text: el.textContent, active: el.getAttribute('data-active') })),
+      els.map((el) => ({
+        value: parseInt(el.textContent ?? '', 10),
+        active: el.getAttribute('data-active') === 'true',
+      })),
     )
-    expect(states).toEqual([
-      { text: '2', active: 'true' },
-      { text: '4', active: 'false' },
-      { text: '6', active: 'false' },
-    ])
+    expect(states.length).toBeGreaterThan(0)
+    for (const { value, active } of states) {
+      expect(active).toBe(2 >= value)
+    }
   })
 })
