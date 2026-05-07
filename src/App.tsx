@@ -209,7 +209,7 @@ function App() {
       </div>
 
       <aside
-        className={`${sidebarOpen ? 'md:flex' : 'md:hidden'} hidden w-[28rem] shrink-0 flex-col border-border border-l bg-card p-4 pt-1.5`}
+        className={`${sidebarOpen ? 'md:flex' : 'md:hidden'} hidden w-[32rem] shrink-0 flex-col border-border border-l bg-card p-4 pt-1.5`}
       >
         <ControlsPanel {...controlsProps} />
       </aside>
