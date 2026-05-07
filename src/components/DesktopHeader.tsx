@@ -6,9 +6,7 @@ import {
   Graph,
   Lock,
   Plus,
-  Star,
   TextAa,
-  User,
 } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import {
@@ -28,16 +26,12 @@ export type DesktopHeaderProps = {
   fixedLayout: boolean
   useShortLabels: boolean
   sidebarOpen: boolean
-  showUniqueTraits: boolean
-  showUniqueChampions: boolean
   onSetChange: (id: string) => void
   onModeToggle: () => void
   onLayoutToggle: () => void
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
   onSidebarToggle: () => void
-  onUniqueTraitsToggle: () => void
-  onUniqueChampionsToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -50,16 +44,12 @@ export function DesktopHeader({
   fixedLayout,
   useShortLabels,
   sidebarOpen,
-  showUniqueTraits,
-  showUniqueChampions,
   onSetChange,
   onModeToggle,
   onLayoutToggle,
   onFixedLayoutToggle,
   onLabelModeToggle,
   onSidebarToggle,
-  onUniqueTraitsToggle,
-  onUniqueChampionsToggle,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -108,26 +98,6 @@ export function DesktopHeader({
       >
         <TextAa weight={useShortLabels ? 'fill' : 'regular'} />
         {useShortLabels ? 'Short labels' : 'Full labels'}
-      </Button>
-
-      <Button
-        onClick={onUniqueTraitsToggle}
-        variant={showUniqueTraits ? 'default' : 'outline'}
-        className="h-10 shrink-0 gap-2 text-[0.95rem]"
-        title="Toggle visibility of traits with only one champion"
-      >
-        <Star weight={showUniqueTraits ? 'fill' : 'regular'} />
-        Unique traits
-      </Button>
-
-      <Button
-        onClick={onUniqueChampionsToggle}
-        variant={showUniqueChampions ? 'default' : 'outline'}
-        className="h-10 shrink-0 gap-2 text-[0.95rem]"
-        title="Always show champions whose only traits are unique"
-      >
-        <User weight={showUniqueChampions ? 'fill' : 'regular'} />
-        Unique champions
       </Button>
 
       <div aria-hidden="true" className="mx-1 h-8 w-px shrink-0 bg-muted-foreground/30" />

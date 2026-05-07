@@ -66,6 +66,10 @@ export type ControlsPanelProps = {
   sortedAndFilteredChampions: Champion[]
   selectedChampions: string[]
   onToggleChampion: (id: string, selected: boolean) => void
+  showUniqueTraits: boolean
+  showUniqueChampions: boolean
+  onUniqueTraitsToggle: () => void
+  onUniqueChampionsToggle: () => void
 }
 
 function SectionHeader({
@@ -104,6 +108,10 @@ export function ControlsPanel({
   sortedAndFilteredChampions,
   selectedChampions,
   onToggleChampion,
+  showUniqueTraits,
+  showUniqueChampions,
+  onUniqueTraitsToggle,
+  onUniqueChampionsToggle,
 }: ControlsPanelProps) {
   const [filtersOpen, setFiltersOpen] = useState(true)
   const [traitsOpen, setTraitsOpen] = useState(true)
@@ -245,7 +253,7 @@ export function ControlsPanel({
           onToggle={() => setFiltersOpen((v) => !v)}
         />
         {filtersOpen && (
-          <CardContent>
+          <CardContent className="space-y-2">
             <div className="flex flex-wrap gap-3">
               {[1, 2, 3, 4, 5].map((cost) => (
                 <div key={cost} className="flex items-center gap-2">
@@ -269,6 +277,36 @@ export function ControlsPanel({
                   </Label>
                 </div>
               ))}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="filter-unique-traits"
+                  checked={showUniqueTraits}
+                  onCheckedChange={onUniqueTraitsToggle}
+                  className="coarse:size-5 border-2"
+                />
+                <Label
+                  htmlFor="filter-unique-traits"
+                  className="coarse:min-h-11 coarse:py-2 cursor-pointer text-sm font-medium select-none"
+                >
+                  Unique traits
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="filter-unique-champions"
+                  checked={showUniqueChampions}
+                  onCheckedChange={onUniqueChampionsToggle}
+                  className="coarse:size-5 border-2"
+                />
+                <Label
+                  htmlFor="filter-unique-champions"
+                  className="coarse:min-h-11 coarse:py-2 cursor-pointer text-sm font-medium select-none"
+                >
+                  Unique champions
+                </Label>
+              </div>
             </div>
           </CardContent>
         )}

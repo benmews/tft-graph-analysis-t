@@ -174,6 +174,10 @@ function App() {
     selectedChampions,
     onToggleChampion: (id, add) =>
       setSelectedChampions((prev) => (add ? [...prev, id] : prev.filter((x) => x !== id))),
+    showUniqueTraits,
+    showUniqueChampions,
+    onUniqueTraitsToggle: handleUniqueTraitsToggle,
+    onUniqueChampionsToggle: handleUniqueChampionsToggle,
   }
 
   // Dev-only test hook for canvas node clicks (used by Playwright tests)
@@ -190,16 +194,12 @@ function App() {
     fixedLayout,
     useShortLabels,
     sidebarOpen,
-    showUniqueTraits,
-    showUniqueChampions,
     onSetChange: handleSetChange,
     onModeToggle: handleModeToggle,
     onLayoutToggle: handleLayoutToggle,
     onFixedLayoutToggle: handleFixedLayoutToggle,
     onLabelModeToggle: handleLabelModeToggle,
     onSidebarToggle: handleSidebarToggle,
-    onUniqueTraitsToggle: handleUniqueTraitsToggle,
-    onUniqueChampionsToggle: handleUniqueChampionsToggle,
     onExpandAll: handleExpandAll,
     onResetExpansions: handleResetExpansions,
     onResetAll: handleResetAll,
