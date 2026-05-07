@@ -211,75 +211,138 @@ export function GraphVisualization({
       return
     }
 
-    // Save the user's current zoom/pan so we can restore it after structure changes.
+    // Snapshot the current camera so we can restore it after structure changes.
     savedViewportRef.current = { zoom: cy.zoom(), pan: cy.pan() }
 
-    cy.elements().remove()
-    cy.add([
-      ...nodes.map((node) => ({
-        data: {
-          id: node.id,
-          label: node.label,
-          type: node.type,
-          color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
-          cost: node.cost,
-        },
-        classes: nodeClassesFor(node.id, selectedNodes, expandedNodes),
-      })),
-      ...edges.map((edge) => ({
-        data: { id: edge.id, source: edge.source, target: edge.target },
-      })),
-    ])
+    if (fixedLayout) {
+      // Fixed mode: rebuild from scratch and apply baked or cached positions.
+      cy.elements().remove()
+      cy.add([
+        ...nodes.map((node) => ({
+          data: {
+            id: node.id,
+            label: node.label,
+            type: node.type,
+            color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
+            cost: node.cost,
+          },
+          classes: nodeClassesFor(node.id, selectedNodes, expandedNodes),
+        })),
+        ...edges.map((edge) => ({
+          data: { id: edge.id, source: edge.source, target: edge.target },
+        })),
+      ])
 
-    const restoreOrFit = () => {
-      if (savedViewportRef.current) {
-        cy.viewport(savedViewportRef.current)
-      } else if (nodes.length > 0) {
-        cy.fit(undefined, 50)
+      const restoreOrFit = () => {
+        if (savedViewportRef.current) cy.viewport(savedViewportRef.current)
+        else if (nodes.length > 0) cy.fit(undefined, 50)
       }
-    }
 
-    // Prefer baked positions when available — every visitor sees the same
-    // layout that was captured at build time.
-    const baked = fixedLayout ? getBakedLayout(set.id) : null
-    if (baked) {
-      baked.forEach((pos, id) => fixedPositionsRef.current.set(id, pos))
-      const layout = cy.layout({
-        name: 'preset',
-        positions: (node: any) => baked.get(node.id()),
-        fit: false,
-        animate: false,
-      } as any)
-      layout.run()
-      restoreOrFit()
-    } else if (fixedLayout && fixedPositionsRef.current.size > 0) {
-      nodes.forEach((node) => {
-        const pos = fixedPositionsRef.current.get(node.id)
-        if (pos) {
-          const cyNode = cy.getElementById(node.id)
-          if (cyNode.length > 0) cyNode.position(pos)
-        }
-      })
-      restoreOrFit()
-    } else {
-      const layout = cy.layout(relayoutOptions(getViewportScale()) as any)
-      layout.run()
-
-      if (fixedLayout) {
+      const baked = getBakedLayout(set.id)
+      if (baked) {
+        baked.forEach((pos, id) => fixedPositionsRef.current.set(id, pos))
+        cy.layout({
+          name: 'preset',
+          positions: (node: any) => baked.get(node.id()),
+          fit: false,
+          animate: false,
+        } as any).run()
+        restoreOrFit()
+      } else if (fixedPositionsRef.current.size > 0) {
+        nodes.forEach((node) => {
+          const pos = fixedPositionsRef.current.get(node.id)
+          if (pos) {
+            const cyNode = cy.getElementById(node.id)
+            if (cyNode.length > 0) cyNode.position(pos)
+          }
+        })
+        restoreOrFit()
+      } else {
+        const layout = cy.layout(relayoutOptions(getViewportScale()) as any)
+        layout.run()
         layout.on('layoutstop', () => {
           cy.nodes().forEach((node) => {
             const pos = node.position()
             fixedPositionsRef.current.set(node.id(), { x: pos.x, y: pos.y })
           })
+          if (savedViewportRef.current) cy.viewport(savedViewportRef.current)
         })
       }
+    } else {
+      // Unfixed mode: incremental diff so existing nodes keep their positions,
+      // then lock them and let cose lay out only the new ones.
+      const incomingNodeIds = new Set(nodes.map((n) => n.id))
+      const incomingEdgeIds = new Set(edges.map((e) => e.id))
 
-      if (savedViewportRef.current) {
-        const saved = savedViewportRef.current
-        layout.on('layoutstop', () => cy.viewport(saved))
-      } else if (nodes.length > 0) {
-        cy.fit(undefined, 50)
+      cy.nodes().forEach((n) => {
+        if (!incomingNodeIds.has(n.id())) n.remove()
+      })
+      cy.edges().forEach((e) => {
+        if (!incomingEdgeIds.has(e.id())) e.remove()
+      })
+
+      const newNodeIds: string[] = []
+      nodes.forEach((node) => {
+        const existing = cy.getElementById(node.id)
+        if (existing.length === 0) {
+          cy.add({
+            group: 'nodes',
+            data: {
+              id: node.id,
+              label: node.label,
+              type: node.type,
+              color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
+              cost: node.cost,
+            },
+            classes: nodeClassesFor(node.id, selectedNodes, expandedNodes),
+          })
+          newNodeIds.push(node.id)
+        } else {
+          existing.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes))
+          if (existing.data('label') !== node.label) existing.data('label', node.label)
+        }
+      })
+
+      edges.forEach((edge) => {
+        if (cy.getElementById(edge.id).length === 0) {
+          cy.add({ group: 'edges', data: { id: edge.id, source: edge.source, target: edge.target } })
+        }
+      })
+
+      // Seed each new node near the centroid of its already-positioned
+      // neighbours so cose has a sensible starting point and the simulation
+      // doesn't pull old nodes around as it untangles overlap.
+      const newNodeIdSet = new Set(newNodeIds)
+      newNodeIds.forEach((id) => {
+        const newNode = cy.getElementById(id)
+        const settledNeighbours = newNode
+          .connectedNodes()
+          .filter((n: any) => !newNodeIdSet.has(n.id()))
+        if (settledNeighbours.length === 0) return
+        let sx = 0
+        let sy = 0
+        settledNeighbours.forEach((n: any) => {
+          const p = n.position()
+          sx += p.x
+          sy += p.y
+        })
+        const cx = sx / settledNeighbours.length
+        const cy0 = sy / settledNeighbours.length
+        // Tiny jitter so co-arrivals don't perfectly overlap.
+        newNode.position({
+          x: cx + (Math.random() - 0.5) * 80,
+          y: cy0 + (Math.random() - 0.5) * 80,
+        })
+      })
+
+      if (newNodeIds.length > 0) {
+        const existingNodes = cy.nodes().filter((n: any) => !newNodeIdSet.has(n.id()))
+        existingNodes.lock()
+        const layout = cy.layout(relayoutOptions(getViewportScale()) as any)
+        layout.on('layoutstop', () => existingNodes.unlock())
+        layout.run()
       }
+      // Don't fit/restore — keep camera exactly where the user left it.
     }
 
     previousNodesKeyRef.current = nodesKey
