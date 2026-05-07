@@ -309,50 +309,29 @@ export function GraphVisualization({
         }
       })
 
-      // Seed each new node at the centroid of its already-positioned
-      // neighbours so cose starts the new ones close to where they belong.
-      // When several arrivals share the same centroid (e.g. expanding a
-      // trait reveals every champion of that trait, all only adjacent to
-      // it), spread them deterministically around a small circle so they
-      // don't start exactly on top of each other.
+      // Seed each new node near the centroid of its already-positioned
+      // neighbours so cose has a sensible starting point and the simulation
+      // doesn't pull old nodes around as it untangles overlap.
       const newNodeIdSet = new Set(newNodeIds)
-      const centroids = new Map<string, { x: number; y: number }>()
-      const colocated = new Map<string, string[]>()
       newNodeIds.forEach((id) => {
-        const settled = cy
-          .getElementById(id)
+        const newNode = cy.getElementById(id)
+        const settledNeighbours = newNode
           .connectedNodes()
           .filter((n: any) => !newNodeIdSet.has(n.id()))
-        if (settled.length === 0) return
+        if (settledNeighbours.length === 0) return
         let sx = 0
         let sy = 0
-        settled.forEach((n: any) => {
+        settledNeighbours.forEach((n: any) => {
           const p = n.position()
           sx += p.x
           sy += p.y
         })
-        const c = { x: sx / settled.length, y: sy / settled.length }
-        centroids.set(id, c)
-        const key = `${c.x.toFixed(0)},${c.y.toFixed(0)}`
-        const list = colocated.get(key) ?? []
-        list.push(id)
-        colocated.set(key, list)
-      })
-
-      const RADIUS = 80
-      colocated.forEach((ids) => {
-        if (ids.length === 1) {
-          const c = centroids.get(ids[0])!
-          cy.getElementById(ids[0]).position(c)
-          return
-        }
-        ids.forEach((id, i) => {
-          const c = centroids.get(id)!
-          const angle = (2 * Math.PI * i) / ids.length
-          cy.getElementById(id).position({
-            x: c.x + RADIUS * Math.cos(angle),
-            y: c.y + RADIUS * Math.sin(angle),
-          })
+        const cx = sx / settledNeighbours.length
+        const cy0 = sy / settledNeighbours.length
+        // Tiny jitter so co-arrivals don't perfectly overlap.
+        newNode.position({
+          x: cx + (Math.random() - 0.5) * 80,
+          y: cy0 + (Math.random() - 0.5) * 80,
         })
       })
 
