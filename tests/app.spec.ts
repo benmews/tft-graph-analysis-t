@@ -91,3 +91,57 @@ test.describe('Graph controls', () => {
     await expect(page.locator('aside').getByText('No champions selected')).not.toBeVisible()
   })
 })
+
+test.describe('Activated Traits', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await waitForGraph(page)
+  })
+
+  test('shows empty-state copy with no champions selected', async ({ page }) => {
+    await expect(
+      page.locator('aside').getByText('No traits activated'),
+    ).toBeVisible()
+  })
+
+  test('a single champion never activates a trait (count must be > 1)', async ({ page }) => {
+    await page.locator('aside').getByRole('button').filter({ hasText: /\dg/ }).first().click()
+    await expect(
+      page.locator('aside').getByText('No champions selected'),
+    ).not.toBeVisible()
+    // Even with 1 champion selected, no trait reaches the count > 1 threshold.
+    await expect(
+      page.locator('aside').getByText('No traits activated'),
+    ).toBeVisible()
+  })
+
+  test('selecting two champions sharing a trait surfaces it with count 2', async ({ page }) => {
+    // Find a pair of champions in the current set that share at least one trait,
+    // pick the trait with the most pairs, and select two of its champions via
+    // the dev __tftClickNode hook (cycling unselected → expanded → selected).
+    const target = await page.evaluate(() => {
+      // The Available Champions list shows champions from currentSet.champions.
+      // Read the bipartite graph from __cy: edges go champion-X ↔ trait-Y.
+      const cy = (window as any).__cy
+      const traitChampions = new Map<string, string[]>()
+      cy.nodes('[type="trait"]').forEach((t: any) => {
+        const champs = t.neighborhood('[type="champion"]').map((c: any) => c.id())
+        if (champs.length >= 2) traitChampions.set(t.id(), champs)
+      })
+      const [traitId, champIds] = [...traitChampions.entries()][0]
+      return { traitId: traitId.replace('trait-', ''), champIds: champIds.slice(0, 2) }
+    })
+
+    // Click each champion twice to land in "selected" state (expand → select).
+    for (const cyId of target.champIds) {
+      await page.evaluate((id) => (window as any).__tftClickNode(id), cyId)
+      await page.evaluate((id) => (window as any).__tftClickNode(id), cyId)
+    }
+
+    const badge = page.locator('aside').getByTestId(`activated-trait-${target.traitId}`)
+    await expect(badge).toBeVisible()
+    await expect(
+      page.locator('aside').getByTestId(`activated-trait-count-${target.traitId}`),
+    ).toHaveText('2')
+  })
+})

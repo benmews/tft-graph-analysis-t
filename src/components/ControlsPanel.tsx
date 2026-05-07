@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -42,6 +43,27 @@ export function ControlsPanel({
   selectedChampions,
   onToggleChampion,
 }: ControlsPanelProps) {
+  const activatedTraits = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const node of selectedChampionNodes) {
+      const champion = currentSet.champions.find(
+        (c) => c.id === node.id.replace('champion-', ''),
+      )
+      if (!champion) continue
+      for (const traitId of champion.traits) {
+        counts.set(traitId, (counts.get(traitId) ?? 0) + 1)
+      }
+    }
+    return [...counts.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([traitId, count]) => ({
+        trait: currentSet.traits.find((t) => t.id === traitId),
+        count,
+      }))
+      .filter((entry): entry is { trait: NonNullable<typeof entry.trait>; count: number } => !!entry.trait)
+      .sort((a, b) => b.count - a.count || a.trait.name.localeCompare(b.trait.name))
+  }, [selectedChampionNodes, currentSet])
+
   return (
     <div className="w-full space-y-4">
         <Card>
@@ -73,6 +95,36 @@ export function ControlsPanel({
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="activated-traits-card">
+          <CardHeader>
+            <CardTitle className="text-base">Activated Traits</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {activatedTraits.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {activatedTraits.map(({ trait, count }) => (
+                  <Badge
+                    key={trait.id}
+                    data-testid={`activated-trait-${trait.id}`}
+                    className="gap-1.5 text-xs"
+                    style={{ backgroundColor: trait.color }}
+                  >
+                    <span>{trait.name}</span>
+                    <span
+                      data-testid={`activated-trait-count-${trait.id}`}
+                      className="font-mono font-semibold"
+                    >
+                      {count}
+                    </span>
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No traits activated</p>
+            )}
           </CardContent>
         </Card>
 
