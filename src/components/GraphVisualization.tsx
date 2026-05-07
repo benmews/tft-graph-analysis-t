@@ -58,6 +58,7 @@ export function GraphVisualization({
   // Track structural state from the previous render so we know when to relayout.
   const previousNodesKeyRef = useRef('')
   const previousEdgesKeyRef = useRef('')
+  const previousFixedLayoutRef = useRef(fixedLayout)
   const fixedPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map())
   const savedViewportRef = useRef<Viewport | null>(null)
 
@@ -172,13 +173,38 @@ export function GraphVisualization({
     const edgesKey = edges.map((e) => `${e.source}-${e.target}`).sort().join(',')
     const structureChanged =
       previousNodesKeyRef.current !== nodesKey || previousEdgesKeyRef.current !== edgesKey
+    const fixedLayoutChanged = previousFixedLayoutRef.current !== fixedLayout
+    previousFixedLayoutRef.current = fixedLayout
 
-    // Cheap path: structure unchanged → just sync the pinned/expanded classes.
+    // Cheap path: structure unchanged → sync labels + classes, and react to a
+    // fixedLayout toggle (snap to baked/cached positions when turning on, or
+    // re-run cose when turning off).
     if (!structureChanged) {
       nodes.forEach((node) => {
         const cyNode = cy.getElementById(node.id)
-        if (cyNode.length > 0) cyNode.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes))
+        if (cyNode.length === 0) return
+        cyNode.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes))
+        if (cyNode.data('label') !== node.label) {
+          cyNode.data('label', node.label)
+        }
       })
+
+      if (fixedLayoutChanged) {
+        if (fixedLayout) {
+          const baked = getBakedLayout(set.id)
+          const positions = baked ?? (fixedPositionsRef.current.size > 0 ? fixedPositionsRef.current : null)
+          if (positions) {
+            positions.forEach((pos, id) => {
+              if (baked) fixedPositionsRef.current.set(id, pos)
+              const cyNode = cy.getElementById(id)
+              if (cyNode.length > 0) cyNode.position(pos)
+            })
+          }
+        } else {
+          const layout = cy.layout(relayoutOptions(getViewportScale()) as any)
+          layout.run()
+        }
+      }
       return
     }
 
