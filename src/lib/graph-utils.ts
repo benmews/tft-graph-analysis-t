@@ -20,6 +20,7 @@ export function generateBipartiteGraph(tftSet: TFTSet): { nodes: GraphNode[]; ed
       id: `trait-${trait.id}`,
       type: 'trait',
       label: trait.name,
+      shortLabel: trait.shortLabel,
       color: trait.color,
     })
   })
@@ -29,6 +30,7 @@ export function generateBipartiteGraph(tftSet: TFTSet): { nodes: GraphNode[]; ed
       id: `champion-${champion.id}`,
       type: 'champion',
       label: champion.name,
+      shortLabel: champion.shortLabel,
       cost: champion.cost,
       color: getChampionColorByCost(champion.cost),
     })
@@ -54,6 +56,7 @@ export function generateTraitEdgeGraph(tftSet: TFTSet): { nodes: GraphNode[]; ed
       id: `champion-${champion.id}`,
       type: 'champion',
       label: champion.name,
+      shortLabel: champion.shortLabel,
       cost: champion.cost,
       color: getChampionColorByCost(champion.cost),
     })

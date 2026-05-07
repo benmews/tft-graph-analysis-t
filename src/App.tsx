@@ -24,6 +24,7 @@ function App() {
   const [filterText, setFilterText] = useState('')
   const [enabledCosts, setEnabledCosts] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]))
   const [controlsOpen, setControlsOpen] = useState(false)
+  const [useShortLabels, setUseShortLabels] = useState(true)
 
   // Auto-close the mobile drawer when the viewport widens past the md breakpoint
   useEffect(() => {
@@ -57,6 +58,14 @@ function App() {
     const ids = new Set(visibleNodes.map((n) => n.id))
     return allEdges.filter((edge) => ids.has(edge.source) && ids.has(edge.target))
   }, [visibleNodes, allEdges])
+
+  const displayNodes = useMemo(
+    () =>
+      useShortLabels
+        ? visibleNodes.map((n) => ({ ...n, label: n.shortLabel ?? n.label }))
+        : visibleNodes,
+    [visibleNodes, useShortLabels],
+  )
 
   /**
    * Click semantics:
@@ -108,6 +117,7 @@ function App() {
     })
   }
 
+  const handleLabelModeToggle = () => setUseShortLabels((v) => !v)
   const handleSetChange = (setId: string) => {
     const next = tftSets.find((s) => s.id === setId)
     if (next) {
@@ -122,8 +132,11 @@ function App() {
   )
 
   const sortedAndFilteredChampions = useMemo(() => {
-    const filtered = filterText
-      ? currentSet.champions.filter((c) => c.name.toLowerCase().includes(filterText.toLowerCase()))
+    const q = filterText.toLowerCase()
+    const filtered = q
+      ? currentSet.champions.filter((c) =>
+          c.name.toLowerCase().includes(q) || (c.shortLabel?.toLowerCase().includes(q) ?? false),
+        )
       : [...currentSet.champions]
     return filtered.sort((a, b) =>
       sortBy === 'alphabetical' ? a.name.localeCompare(b.name) : a.cost - b.cost,
@@ -157,10 +170,12 @@ function App() {
     mode,
     layoutMode,
     fixedLayout,
+    useShortLabels,
     onSetChange: handleSetChange,
     onModeToggle: handleModeToggle,
     onLayoutToggle: handleLayoutToggle,
     onFixedLayoutToggle: handleFixedLayoutToggle,
+    onLabelModeToggle: handleLabelModeToggle,
     onExpandAll: handleExpandAll,
     onResetExpansions: handleResetExpansions,
     onResetAll: handleResetAll,
@@ -176,7 +191,7 @@ function App() {
 
         <div className="relative z-0 min-h-[min(50dvh,28rem)] flex-1 touch-none overflow-hidden rounded-lg md:min-h-0">
           <GraphVisualization
-            nodes={visibleNodes}
+            nodes={displayNodes}
             edges={visibleEdges}
             mode={mode}
             layoutMode={layoutMode}
@@ -184,6 +199,7 @@ function App() {
             selectedNodes={selectedChampions.map((id) => `champion-${id}`)}
             expandedNodes={expandedNodes}
             fixedLayout={fixedLayout}
+            largeLabels={useShortLabels}
           />
         </div>
       </div>

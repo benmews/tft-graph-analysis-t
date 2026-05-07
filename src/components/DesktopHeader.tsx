@@ -4,6 +4,7 @@ import {
   Graph,
   Lock,
   Plus,
+  TextAa,
 } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import {
@@ -21,10 +22,12 @@ export type DesktopHeaderProps = {
   mode: VisualizationMode
   layoutMode: LayoutMode
   fixedLayout: boolean
+  useShortLabels: boolean
   onSetChange: (id: string) => void
   onModeToggle: () => void
   onLayoutToggle: () => void
   onFixedLayoutToggle: () => void
+  onLabelModeToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -35,10 +38,12 @@ export function DesktopHeader({
   mode,
   layoutMode,
   fixedLayout,
+  useShortLabels,
   onSetChange,
   onModeToggle,
   onLayoutToggle,
   onFixedLayoutToggle,
+  onLabelModeToggle,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -77,6 +82,15 @@ export function DesktopHeader({
       >
         <Lock weight={fixedLayout ? 'fill' : 'regular'} />
         Fixed Layout
+      </Button>
+
+      <Button
+        onClick={onLabelModeToggle}
+        variant="outline"
+        className="h-10 shrink-0 gap-2 text-[0.95rem]"
+      >
+        <TextAa weight={useShortLabels ? 'fill' : 'regular'} />
+        {useShortLabels ? 'Short labels' : 'Full labels'}
       </Button>
 
       <div aria-hidden="true" className="mx-1 h-8 w-px shrink-0 bg-muted-foreground/30" />

@@ -19,6 +19,7 @@ interface GraphVisualizationProps {
   selectedNodes?: string[]
   expandedNodes?: string[]
   fixedLayout?: boolean
+  largeLabels?: boolean
 }
 
 type Viewport = { zoom: number; pan: { x: number; y: number } }
@@ -39,6 +40,7 @@ export function GraphVisualization({
   selectedNodes = [],
   expandedNodes = [],
   fixedLayout = false,
+  largeLabels = false,
 }: GraphVisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
@@ -75,7 +77,7 @@ export function GraphVisualization({
     const cy = cytoscape({
       container: containerRef.current,
       elements: [],
-      style: buildCytoscapeStyles(scale),
+      style: buildCytoscapeStyles(scale, largeLabels),
       layout: initialLayoutOptions(scale) as any,
       userZoomingEnabled: true,
       userPanningEnabled: true,
@@ -108,6 +110,13 @@ export function GraphVisualization({
     // would tear down Cytoscape on the very next render after setIsInitialized.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleHover])
+
+  // ── 1b. Re-apply styles when label-size mode flips ────────────────────────
+  useEffect(() => {
+    const cy = cyRef.current
+    if (!cy || !isInitialized) return
+    cy.style(buildCytoscapeStyles(getViewportScale(), largeLabels) as any)
+  }, [largeLabels, isInitialized])
 
   // ── 2. Re-fit on container resize (orientation flip / browser chrome) ─────
   useEffect(() => {

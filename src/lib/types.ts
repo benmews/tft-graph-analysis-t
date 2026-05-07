@@ -2,6 +2,8 @@ export interface Trait {
   id: string
   name: string
   color: string
+  /** Optional graph-only display label for traits with long names. */
+  shortLabel?: string
   /**
    * Champion-count thresholds at which the trait activates a new tier.
    * Falls back to DEFAULT_TRAIT_BREAKPOINTS when not authored per-trait.
@@ -20,6 +22,8 @@ export interface Champion {
   name: string
   cost: number
   traits: string[]
+  /** Optional graph-only display label for champions with long names. */
+  shortLabel?: string
 }
 
 export interface TFTSet {
@@ -37,6 +41,7 @@ export interface GraphNode {
   id: string
   type: 'champion' | 'trait'
   label: string
+  shortLabel?: string
   color?: string
   cost?: number
   expanded?: boolean

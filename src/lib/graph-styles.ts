@@ -12,8 +12,10 @@ export function getViewportScale(): number {
   return Math.min(1, Math.max(0.55, window.innerWidth / 768))
 }
 
-export function buildCytoscapeStyles(scale: number): any[] {
+export function buildCytoscapeStyles(scale: number, largeLabels = false): any[] {
   const px = (n: number) => `${Math.round(n * scale)}px`
+  const baseFont = largeLabels ? 17 : 14
+  const pinnedFont = largeLabels ? 19 : 16
 
   return [
     {
@@ -24,7 +26,7 @@ export function buildCytoscapeStyles(scale: number): any[] {
         color: '#ffffff',
         'text-valign': 'center',
         'text-halign': 'center',
-        'font-size': px(14),
+        'font-size': px(baseFont),
         'font-family': 'Space Grotesk, sans-serif',
         'font-weight': 600,
         width: px(80),
@@ -53,7 +55,7 @@ export function buildCytoscapeStyles(scale: number): any[] {
         'border-style': 'solid',
         'border-opacity': 1,
         'text-max-width': px(110),
-        'font-size': px(16),
+        'font-size': px(pinnedFont),
         'overlay-color': '#FFD700',
         'overlay-opacity': 0.3,
         'overlay-padding': px(8),

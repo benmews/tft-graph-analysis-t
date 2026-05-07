@@ -6,6 +6,7 @@ import {
   Lock,
   Plus,
   SlidersHorizontal,
+  TextAa,
 } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import {
@@ -30,11 +31,13 @@ export type MobileHeaderProps = {
   mode: VisualizationMode
   layoutMode: LayoutMode
   fixedLayout: boolean
+  useShortLabels: boolean
   controlsOpen: boolean
   onSetChange: (id: string) => void
   onModeToggle: () => void
   onLayoutToggle: () => void
   onFixedLayoutToggle: () => void
+  onLabelModeToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -46,11 +49,13 @@ export function MobileHeader({
   mode,
   layoutMode,
   fixedLayout,
+  useShortLabels,
   controlsOpen,
   onSetChange,
   onModeToggle,
   onLayoutToggle,
   onFixedLayoutToggle,
+  onLabelModeToggle,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -104,6 +109,13 @@ export function MobileHeader({
             >
               <Lock className="size-4" weight={fixedLayout ? 'fill' : 'regular'} />
               {fixedLayout ? 'Unlock layout' : 'Lock layout'}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="coarse:min-h-11 cursor-pointer"
+              onSelect={onLabelModeToggle}
+            >
+              <TextAa className="size-4" weight={useShortLabels ? 'fill' : 'regular'} />
+              {useShortLabels ? 'Short labels' : 'Full labels'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
