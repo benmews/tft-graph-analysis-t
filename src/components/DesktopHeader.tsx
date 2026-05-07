@@ -46,7 +46,7 @@ export function DesktopHeader({
   return (
     <div className="hidden flex-nowrap items-center gap-2 overflow-x-auto md:flex">
       <Select value={currentSet.id} onValueChange={onSetChange}>
-        <SelectTrigger className="w-[180px] shrink-0">
+        <SelectTrigger className="h-10 w-[180px] shrink-0">
           <SelectValue placeholder="Select TFT Set" />
         </SelectTrigger>
         <SelectContent>
@@ -58,14 +58,14 @@ export function DesktopHeader({
         </SelectContent>
       </Select>
 
-      <div aria-hidden="true" className="mx-1 h-7 w-px shrink-0 bg-muted-foreground/30" />
+      <div aria-hidden="true" className="mx-1 h-8 w-px shrink-0 bg-muted-foreground/30" />
 
-      <Button onClick={onModeToggle} variant="outline" className="shrink-0 gap-2">
+      <Button onClick={onModeToggle} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
         <ArrowsLeftRight />
         {mode === 'bipartite' ? 'Bipartite' : 'Trait Edges'}
       </Button>
 
-      <Button onClick={onLayoutToggle} variant="outline" className="shrink-0 gap-2">
+      <Button onClick={onLayoutToggle} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
         <Graph weight="duotone" />
         {layoutMode === 'hierarchical' ? 'Hierarchical' : 'Spring'}
       </Button>
@@ -73,23 +73,23 @@ export function DesktopHeader({
       <Button
         onClick={onFixedLayoutToggle}
         variant={fixedLayout ? 'default' : 'outline'}
-        className="shrink-0 gap-2"
+        className="h-10 shrink-0 gap-2 text-[0.95rem]"
       >
         <Lock weight={fixedLayout ? 'fill' : 'regular'} />
         Fixed Layout
       </Button>
 
-      <div aria-hidden="true" className="mx-1 h-7 w-px shrink-0 bg-muted-foreground/30" />
+      <div aria-hidden="true" className="mx-1 h-8 w-px shrink-0 bg-muted-foreground/30" />
 
-      <Button onClick={onExpandAll} variant="outline" className="shrink-0 gap-2">
+      <Button onClick={onExpandAll} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
         <Plus weight="bold" />
         Expand All
       </Button>
-      <Button onClick={onResetExpansions} variant="outline" className="shrink-0 gap-2">
+      <Button onClick={onResetExpansions} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
         <ArrowsClockwise />
         Reset Expansions
       </Button>
-      <Button onClick={onResetAll} variant="outline" className="shrink-0 gap-2">
+      <Button onClick={onResetAll} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
         <ArrowsClockwise weight="bold" />
         Reset All
       </Button>

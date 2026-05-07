@@ -168,8 +168,8 @@ function App() {
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-background text-foreground pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:flex-row md:pb-[env(safe-area-inset-bottom)] md:pt-[env(safe-area-inset-top)]">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] md:gap-1.5 md:p-3">
-        <header className="relative z-10 shrink-0 space-y-3">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] md:gap-0 md:p-3">
+        <header className="relative z-10 shrink-0">
           <DesktopHeader {...headerProps} />
           <MobileHeader {...headerProps} controlsOpen={controlsOpen} onControlsToggle={handleControlsToggle} />
         </header>
