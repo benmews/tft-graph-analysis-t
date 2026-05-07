@@ -103,3 +103,36 @@ test.describe('Cytoscape node colors', () => {
     expect(distinctColors).toBeGreaterThanOrEqual(5)
   })
 })
+
+test.describe('Cost legend swatches', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await waitForGraph(page)
+    await waitForCyNodes(page)
+  })
+
+  test('one swatch is rendered per cost tier (1–5)', async ({ page }) => {
+    for (const cost of [1, 2, 3, 4, 5]) {
+      await expect(page.getByTestId(`cost-swatch-${cost}`).first()).toBeVisible()
+    }
+  })
+
+  test('each swatch matches the rendered cytoscape node color for that cost', async ({ page }) => {
+    for (const cost of [1, 2, 3, 4, 5]) {
+      const swatchBg = await page
+        .getByTestId(`cost-swatch-${cost}`)
+        .first()
+        .evaluate((el) => getComputedStyle(el).backgroundColor)
+      const [sr, sg, sb] = await colorToRgb(page, swatchBg)
+
+      const nodeColor: string | null = await page.evaluate((c) => {
+        const node = (window as any).__cy.nodes(`[type="champion"][cost=${c}]`).first()
+        return node.length > 0 ? node.data('color') : null
+      }, cost)
+      expect(nodeColor).not.toBeNull()
+      const [nr, ng, nb] = await colorToRgb(page, nodeColor!)
+
+      expect([sr, sg, sb]).toEqual([nr, ng, nb])
+    }
+  })
+})

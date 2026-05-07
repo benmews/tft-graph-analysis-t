@@ -1,6 +1,6 @@
 import { TFTSet, GraphNode, GraphEdge, VisualizationMode } from './types'
 
-function getChampionColorByCost(cost: number): string {
+export function getChampionColorByCost(cost: number): string {
   const costColors: Record<number, string> = {
     1: 'oklch(0.55 0.15 240)',
     2: 'oklch(0.55 0.35 145)',

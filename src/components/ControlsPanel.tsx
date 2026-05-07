@@ -14,6 +14,8 @@ import {
   Coins,
 } from '@phosphor-icons/react'
 import type { Champion, GraphNode, TFTSet } from '@/lib/types'
+import { getChampionColorByCost } from '@/lib/graph-utils'
+import { oklchToHex } from '@/lib/color-utils'
 
 export type ControlsPanelProps = {
   currentSet: TFTSet
@@ -82,8 +84,14 @@ export function ControlsPanel({
                   />
                   <Label
                     htmlFor={`cost-${cost}`}
-                    className="coarse:min-h-11 coarse:py-2 flex cursor-pointer items-center text-sm font-medium select-none"
+                    className="coarse:min-h-11 coarse:py-2 flex cursor-pointer items-center gap-1.5 text-sm font-medium select-none"
                   >
+                    <span
+                      data-testid={`cost-swatch-${cost}`}
+                      aria-hidden="true"
+                      className="inline-block size-3 rounded-full border border-border"
+                      style={{ backgroundColor: oklchToHex(getChampionColorByCost(cost)) }}
+                    />
                     {cost}g
                   </Label>
                 </div>
