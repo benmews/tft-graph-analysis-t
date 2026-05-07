@@ -222,7 +222,7 @@ export function ControlsPanel({
                     className="flex flex-col gap-2 rounded bg-secondary/50 p-2 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{node.label}</span>
+                      <span className="text-sm font-medium">{node.label}</span>
                       <Badge variant="outline" className="font-mono text-xs">
                         {champion?.cost}g
                       </Badge>
