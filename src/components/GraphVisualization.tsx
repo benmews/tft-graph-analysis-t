@@ -134,7 +134,8 @@ export function GraphVisualization({
         y: Math.round(n.position('y') * 100) / 100,
       }))
       const key = makeBakedLayoutKey(setId, mode, layoutMode)
-      const snippet = `'${key}': ${JSON.stringify(positions)},`
+      // JSON entry — paste this as a key/value into baked-layouts.json.
+      const snippet = `${JSON.stringify(key)}: ${JSON.stringify(positions)}`
       // eslint-disable-next-line no-console
       console.log(snippet)
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
