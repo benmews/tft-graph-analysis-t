@@ -92,14 +92,22 @@ export type VisibilityOptions = {
  * Decide which nodes are currently visible in the graph view.
  *
  * The rules:
- *  - Cost filter is applied to champion nodes first.
+ *  - Cost filter is applied to champion nodes; the Unique-traits checkbox
+ *    can hide single-champion trait nodes.
+ *  - Selected and expanded nodes (and unique champions when pinned) are
+ *    "overrides": they stay visible even when a filter would hide them,
+ *    AND they remain valid intermediates in the reveal graph.
+ *  - Filtered-out nodes that aren't overrides drop out of the reveal graph
+ *    entirely. So a champion C that was only reachable as B's 2-hop
+ *    neighbour disappears when B gets filtered out.
  *  - With nothing selected/expanded:
- *      fixedLayout=true  → show every filtered node
- *      fixedLayout=false → show the first 15 (preview)
- *  - Selected or expanded champion: show its 2-hop neighborhood plus any
- *    "circle trait" that connects two of those revealed champions but
- *    isn't one of the champion's own traits.
- *  - Expanded trait: show the trait + its champion neighbors.
+ *      fixedLayout=true  → show every allowed node
+ *      fixedLayout=false → show the first 15 (preview), plus any pinned
+ *                          unique champions
+ *  - Selected or expanded champion: 2-hop neighbourhood (in the reveal
+ *    graph) plus any "circle trait" that connects two of those revealed
+ *    champions but isn't one of the champion's own traits.
+ *  - Expanded trait: the trait + its champion neighbours.
  */
 export function computeVisibleNodes(
   allNodes: GraphNode[],
@@ -115,8 +123,7 @@ export function computeVisibleNodes(
     showUniqueChampions = false,
   } = opts
 
-  // Compute trait → champion-count once, used by both unique-trait hiding and
-  // unique-champion pinning.
+  // Trait → champion-count, used for unique-trait hiding and unique-champion pinning.
   const traitChampionCounts = new Map<string, number>()
   for (const edge of allEdges) {
     const trait = edge.source.startsWith('trait-')
@@ -129,8 +136,8 @@ export function computeVisibleNodes(
   }
   const isUniqueTrait = (traitId: string) => (traitChampionCounts.get(traitId) ?? 0) <= 1
 
-  // A champion qualifies as "always visible" when every trait it carries is a
-  // unique trait — these would otherwise float without any connecting edges.
+  // Champions whose every adjacent trait is unique (would otherwise float
+  // disconnected and so are pinned by the Unique-champions toggle).
   const uniqueChampionIds = new Set<string>()
   if (showUniqueChampions) {
     const championTraits = new Map<string, string[]>()
@@ -155,7 +162,14 @@ export function computeVisibleNodes(
     }
   }
 
-  const passesBaseFilters = (node: GraphNode) => {
+  // Override nodes: visible regardless of filters, AND treated as present
+  // in the reveal graph so they can serve as intermediates.
+  const overrideIds = new Set<string>()
+  for (const cid of selectedChampions) overrideIds.add(`champion-${cid}`)
+  for (const eid of expandedNodes) overrideIds.add(eid)
+  if (showUniqueChampions) for (const id of uniqueChampionIds) overrideIds.add(id)
+
+  const passesFilter = (node: GraphNode): boolean => {
     if (node.type === 'champion') {
       return node.cost === undefined || enabledCosts.has(node.cost)
     }
@@ -164,15 +178,25 @@ export function computeVisibleNodes(
     }
     return true
   }
+  const isAllowed = (node: GraphNode): boolean =>
+    overrideIds.has(node.id) || passesFilter(node)
 
-  const filteredNodes = allNodes.filter(passesBaseFilters)
+  const allowedNodes = allNodes.filter(isAllowed)
+  const allowedNodeIds = new Set(allowedNodes.map((n) => n.id))
+
+  // Reveal traversal walks only edges between allowed endpoints, so a hidden
+  // intermediate also drops anything downstream that was only reachable
+  // through it.
+  const effectiveEdges = allEdges.filter(
+    (e) => allowedNodeIds.has(e.source) && allowedNodeIds.has(e.target),
+  )
 
   if (selectedChampions.length === 0 && expandedNodes.length === 0) {
-    if (fixedLayout) return filteredNodes
-    const base = filteredNodes.slice(0, 15)
+    if (fixedLayout) return allowedNodes
+    const base = allowedNodes.slice(0, 15)
     if (showUniqueChampions) {
       const present = new Set(base.map((n) => n.id))
-      for (const node of filteredNodes) {
+      for (const node of allowedNodes) {
         if (uniqueChampionIds.has(node.id) && !present.has(node.id)) {
           base.push(node)
           present.add(node.id)
@@ -185,26 +209,27 @@ export function computeVisibleNodes(
   const visible = new Set<string>()
 
   selectedChampions.forEach((champId) => {
-    revealChampionNeighborhood(`champion-${champId}`, allEdges, visible)
+    revealChampionNeighborhood(`champion-${champId}`, effectiveEdges, visible)
   })
 
   expandedNodes.forEach((nodeId) => {
     visible.add(nodeId)
 
     if (nodeId.startsWith('trait-')) {
-      findNeighbors(nodeId, allEdges, 1).forEach((n) => {
+      findNeighbors(nodeId, effectiveEdges, 1).forEach((n) => {
         if (n.startsWith('champion-')) visible.add(n)
       })
     } else if (nodeId.startsWith('champion-')) {
-      revealChampionNeighborhood(nodeId, allEdges, visible)
+      revealChampionNeighborhood(nodeId, effectiveEdges, visible)
     }
   })
 
-  if (showUniqueChampions) {
-    for (const id of uniqueChampionIds) visible.add(id)
-  }
+  // Selected, expanded, and (when on) unique-champion overrides are always
+  // visible — even when they themselves were filtered out by cost or carry
+  // no allowed edges to lean on.
+  for (const id of overrideIds) visible.add(id)
 
-  return filteredNodes.filter((node) => visible.has(node.id))
+  return allowedNodes.filter((node) => visible.has(node.id))
 }
 
 /**

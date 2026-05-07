@@ -218,6 +218,30 @@ test.describe('Header toggles', () => {
     expect(before - after).toBe(11)
   })
 
+  test('selected champion stays visible even when its cost gets filtered out', async ({ page }) => {
+    // Aatrox (1g) is alphabetically first.
+    await page.locator('aside [data-testid="champion-row-aatrox"]').click()
+    const aatroxIn = () =>
+      page.evaluate(() => (window as any).__cy.getElementById('champion-aatrox').length > 0)
+    expect(await aatroxIn()).toBe(true)
+
+    // Uncheck the 1g cost filter — the OVERRIDE should keep Aatrox visible
+    // even though every other 1g champion drops out.
+    await page.locator('aside').getByLabel('1g').click()
+    await expect.poll(aatroxIn).toBe(true)
+  })
+
+  test('filtering out a cost also drops champions of that cost from the revealed neighborhood', async ({ page }) => {
+    await page.locator('aside [data-testid="champion-row-aatrox"]').click()
+
+    const count2g = () =>
+      page.evaluate(() => (window as any).__cy.nodes('[type="champion"][cost=2]').length)
+    expect(await count2g()).toBeGreaterThan(0)
+
+    await page.locator('aside').getByLabel('2g').click()
+    await expect.poll(count2g).toBe(0)
+  })
+
   test('Unique champions checkbox keeps all-unique champions visible after a selection', async ({ page }) => {
     // Select Aatrox (alphabetically first) so most champions get filtered out.
     await page.locator('aside').getByRole('button').filter({ hasText: /\dg/ }).first().click()
