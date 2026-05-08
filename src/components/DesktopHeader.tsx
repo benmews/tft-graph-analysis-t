@@ -6,6 +6,7 @@ import {
   Lock,
   MagicWand,
   Plus,
+  Sword,
   TextAa,
 } from '@phosphor-icons/react'
 import { Button } from './ui/button'
@@ -25,12 +26,14 @@ export type DesktopHeaderProps = {
   useShortLabels: boolean
   sidebarOpen: boolean
   showUncontested: boolean
+  showOpponent: boolean
   onSetChange: (id: string) => void
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
   onSidebarToggle: () => void
   onTidyLayout: () => void
   onUncontestedToggle: () => void
+  onOpponentToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -42,12 +45,14 @@ export function DesktopHeader({
   useShortLabels,
   sidebarOpen,
   showUncontested,
+  showOpponent,
   onSetChange,
   onFixedLayoutToggle,
   onLabelModeToggle,
   onSidebarToggle,
   onTidyLayout,
   onUncontestedToggle,
+  onOpponentToggle,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -98,6 +103,16 @@ export function DesktopHeader({
         >
           <TextAa weight={useShortLabels ? 'fill' : 'regular'} />
           Short labels
+        </Button>
+
+        <Button
+          onClick={onOpponentToggle}
+          variant={showOpponent ? 'default' : 'outline'}
+          className="h-10 shrink-0 gap-2 text-[0.95rem]"
+          title="Highlight opponent-picked traits and their adjacent champions"
+        >
+          <Sword weight={showOpponent ? 'fill' : 'regular'} />
+          Show opponent
         </Button>
 
         <Button

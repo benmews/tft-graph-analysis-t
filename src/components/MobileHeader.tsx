@@ -7,6 +7,7 @@ import {
   MagicWand,
   Plus,
   SlidersHorizontal,
+  Sword,
   TextAa,
 } from '@phosphor-icons/react'
 import { Button } from './ui/button'
@@ -33,6 +34,7 @@ export type MobileHeaderProps = {
   useShortLabels: boolean
   sidebarOpen: boolean
   showUncontested: boolean
+  showOpponent: boolean
   controlsOpen: boolean
   onSetChange: (id: string) => void
   onFixedLayoutToggle: () => void
@@ -40,6 +42,7 @@ export type MobileHeaderProps = {
   onSidebarToggle: () => void
   onTidyLayout: () => void
   onUncontestedToggle: () => void
+  onOpponentToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -51,12 +54,14 @@ export function MobileHeader({
   fixedLayout,
   useShortLabels,
   showUncontested,
+  showOpponent,
   controlsOpen,
   onSetChange,
   onFixedLayoutToggle,
   onLabelModeToggle,
   onTidyLayout,
   onUncontestedToggle,
+  onOpponentToggle,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -126,6 +131,13 @@ export function MobileHeader({
             >
               <TextAa className="size-4" weight={useShortLabels ? 'fill' : 'regular'} />
               {useShortLabels ? 'Short labels' : 'Full labels'}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="coarse:min-h-11 cursor-pointer"
+              onSelect={onOpponentToggle}
+            >
+              <Sword className="size-4" weight={showOpponent ? 'fill' : 'regular'} />
+              {showOpponent ? 'Hide opponent' : 'Show opponent'}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="coarse:min-h-11 cursor-pointer"

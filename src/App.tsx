@@ -29,6 +29,7 @@ function App() {
   const [showUniqueChampions, setShowUniqueChampions] = useState(false)
   const [tidyCounter, setTidyCounter] = useState(0)
   const [showUncontested, setShowUncontested] = useState(false)
+  const [showOpponent, setShowOpponent] = useState(true)
 
   // Auto-close the mobile drawer when the viewport widens past the md breakpoint
   useEffect(() => {
@@ -163,6 +164,7 @@ function App() {
   const handleUniqueChampionsToggle = () => setShowUniqueChampions((v) => !v)
   const handleTidyLayout = () => setTidyCounter((c) => c + 1)
   const handleUncontestedToggle = () => setShowUncontested((v) => !v)
+  const handleOpponentToggle = () => setShowOpponent((v) => !v)
   const handleSetChange = (setId: string) => {
     const next = tftSets.find((s) => s.id === setId)
     if (next) {
@@ -220,12 +222,14 @@ function App() {
     useShortLabels,
     sidebarOpen,
     showUncontested,
+    showOpponent,
     onSetChange: handleSetChange,
     onFixedLayoutToggle: handleFixedLayoutToggle,
     onLabelModeToggle: handleLabelModeToggle,
     onSidebarToggle: handleSidebarToggle,
     onTidyLayout: handleTidyLayout,
     onUncontestedToggle: handleUncontestedToggle,
+    onOpponentToggle: handleOpponentToggle,
     onExpandAll: handleExpandAll,
     onResetExpansions: handleResetExpansions,
     onResetAll: handleResetAll,
@@ -252,6 +256,7 @@ function App() {
             largeLabels={useShortLabels}
             tidyTrigger={tidyCounter}
             showUncontested={showUncontested}
+            showOpponent={showOpponent}
           />
         </div>
       </div>
