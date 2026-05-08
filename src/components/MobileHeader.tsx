@@ -1,5 +1,6 @@
 import {
   ArrowsClockwise,
+  Eye,
   Graph,
   List,
   Lock,
@@ -31,12 +32,14 @@ export type MobileHeaderProps = {
   fixedLayout: boolean
   useShortLabels: boolean
   sidebarOpen: boolean
+  showUncontested: boolean
   controlsOpen: boolean
   onSetChange: (id: string) => void
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
   onSidebarToggle: () => void
   onTidyLayout: () => void
+  onUncontestedToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -47,11 +50,13 @@ export function MobileHeader({
   currentSet,
   fixedLayout,
   useShortLabels,
+  showUncontested,
   controlsOpen,
   onSetChange,
   onFixedLayoutToggle,
   onLabelModeToggle,
   onTidyLayout,
+  onUncontestedToggle,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -121,6 +126,13 @@ export function MobileHeader({
             >
               <TextAa className="size-4" weight={useShortLabels ? 'fill' : 'regular'} />
               {useShortLabels ? 'Short labels' : 'Full labels'}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="coarse:min-h-11 cursor-pointer"
+              onSelect={onUncontestedToggle}
+            >
+              <Eye className="size-4" weight={showUncontested ? 'fill' : 'regular'} />
+              {showUncontested ? 'Hide uncontested' : 'Show uncontested'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

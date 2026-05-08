@@ -23,6 +23,7 @@ interface GraphVisualizationProps {
   largeLabels?: boolean
   /** Increment to force a fresh cose layout on the visible nodes. */
   tidyTrigger?: number
+  showUncontested?: boolean
 }
 
 type Viewport = { zoom: number; pan: { x: number; y: number } }
@@ -34,20 +35,23 @@ function nodeClassesFor(
   expanded: string[],
   opponent: string[],
   opponentNeighbors: Set<string>,
+  uncontestedTier: 'near' | 'far' | null,
 ): string {
+  const classes: string[] = []
   if (id.startsWith('trait-')) {
-    if (opponent.includes(id)) return 'opponent-trait'
-    if (expanded.includes(id)) return 'expanded'
-    return ''
+    if (opponent.includes(id)) classes.push('opponent-trait')
+    else if (expanded.includes(id)) classes.push('expanded')
+  } else {
+    const isPinned = selected.includes(id)
+    const isExpanded = !isPinned && expanded.includes(id)
+    if (isPinned) classes.push('pinned')
+    if (isExpanded) classes.push('expanded')
+    if (opponentNeighbors.has(id)) classes.push('opponent-neighbor')
   }
-  // champion
-  const isPinned = selected.includes(id)
-  const isExpanded = !isPinned && expanded.includes(id)
-  const classes = [
-    isPinned && 'pinned',
-    isExpanded && 'expanded',
-    opponentNeighbors.has(id) && 'opponent-neighbor',
-  ].filter(Boolean) as string[]
+  // Uncontested wins visually — placed last so cytoscape applies it on top
+  // of pinned/expanded/opponent-* borders.
+  if (uncontestedTier === 'near') classes.push('uncontested-near')
+  else if (uncontestedTier === 'far') classes.push('uncontested-far')
   return classes.join(' ')
 }
 
@@ -63,6 +67,7 @@ export function GraphVisualization({
   fixedLayout = false,
   largeLabels = false,
   tidyTrigger = 0,
+  showUncontested = false,
 }: GraphVisualizationProps) {
   // Champions adjacent (1-hop) to any opponent-marked trait. Computed from
   // the current edge set so it stays in sync as visibility changes.
@@ -76,6 +81,49 @@ export function GraphVisualization({
     }
     return set
   }, [edges, opponentTraits])
+
+  // Per-node "uncontested tier" classification. Multi-source BFS from every
+  // opponent-node (opponent traits + their adjacent champions) gives a
+  // distance per visible node:
+  //   distance 1–2 → near tier (light green)
+  //   distance ≥ 3 (or unreachable) → far tier (thick green)
+  // Opponent-nodes themselves get no uncontested class.
+  const uncontestedTiers = useMemo(() => {
+    const tiers = new Map<string, 'near' | 'far'>()
+    if (!showUncontested) return tiers
+
+    const opponentNodeIds = new Set<string>(opponentTraits)
+    opponentNeighbors.forEach((id) => opponentNodeIds.add(id))
+
+    const adj = new Map<string, string[]>()
+    for (const e of edges) {
+      ;(adj.get(e.source) ?? adj.set(e.source, []).get(e.source)!).push(e.target)
+      ;(adj.get(e.target) ?? adj.set(e.target, []).get(e.target)!).push(e.source)
+    }
+
+    const distance = new Map<string, number>()
+    const queue: { id: string; d: number }[] = []
+    for (const id of opponentNodeIds) {
+      distance.set(id, 0)
+      queue.push({ id, d: 0 })
+    }
+    while (queue.length > 0) {
+      const { id, d } = queue.shift()!
+      for (const next of adj.get(id) ?? []) {
+        if (distance.has(next)) continue
+        distance.set(next, d + 1)
+        queue.push({ id: next, d: d + 1 })
+      }
+    }
+
+    for (const node of nodes) {
+      if (opponentNodeIds.has(node.id)) continue
+      const d = distance.get(node.id)
+      if (d !== undefined && d <= 2) tiers.set(node.id, 'near')
+      else tiers.set(node.id, 'far')
+    }
+    return tiers
+  }, [showUncontested, opponentTraits, opponentNeighbors, edges, nodes])
 
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
@@ -232,7 +280,7 @@ export function GraphVisualization({
       nodes.forEach((node) => {
         const cyNode = cy.getElementById(node.id)
         if (cyNode.length === 0) return
-        cyNode.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors))
+        cyNode.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors, uncontestedTiers.get(node.id) ?? null))
         if (cyNode.data('label') !== node.label) {
           cyNode.data('label', node.label)
         }
@@ -272,7 +320,7 @@ export function GraphVisualization({
             color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
             cost: node.cost,
           },
-          classes: nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors),
+          classes: nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors, uncontestedTiers.get(node.id) ?? null),
         })),
         ...edges.map((edge) => ({
           data: { id: edge.id, source: edge.source, target: edge.target },
@@ -340,11 +388,11 @@ export function GraphVisualization({
               color: oklchToHex(node.color || 'oklch(0.35 0.02 240)'),
               cost: node.cost,
             },
-            classes: nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors),
+            classes: nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors, uncontestedTiers.get(node.id) ?? null),
           })
           newNodeIds.push(node.id)
         } else {
-          existing.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors))
+          existing.classes(nodeClassesFor(node.id, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors, uncontestedTiers.get(node.id) ?? null))
           if (existing.data('label') !== node.label) existing.data('label', node.label)
         }
       })
@@ -393,7 +441,7 @@ export function GraphVisualization({
 
     previousNodesKeyRef.current = nodesKey
     previousEdgesKeyRef.current = edgesKey
-  }, [nodes, edges, set, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors, isInitialized, fixedLayout])
+  }, [nodes, edges, set, selectedNodes, expandedNodes, opponentTraits, opponentNeighbors, uncontestedTiers, isInitialized, fixedLayout])
 
   return (
     <div

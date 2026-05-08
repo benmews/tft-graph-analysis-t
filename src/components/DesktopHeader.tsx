@@ -2,6 +2,7 @@ import {
   ArrowsClockwise,
   CaretDoubleLeft,
   CaretDoubleRight,
+  Eye,
   Lock,
   MagicWand,
   Plus,
@@ -23,11 +24,13 @@ export type DesktopHeaderProps = {
   fixedLayout: boolean
   useShortLabels: boolean
   sidebarOpen: boolean
+  showUncontested: boolean
   onSetChange: (id: string) => void
   onFixedLayoutToggle: () => void
   onLabelModeToggle: () => void
   onSidebarToggle: () => void
   onTidyLayout: () => void
+  onUncontestedToggle: () => void
   onExpandAll: () => void
   onResetExpansions: () => void
   onResetAll: () => void
@@ -38,11 +41,13 @@ export function DesktopHeader({
   fixedLayout,
   useShortLabels,
   sidebarOpen,
+  showUncontested,
   onSetChange,
   onFixedLayoutToggle,
   onLabelModeToggle,
   onSidebarToggle,
   onTidyLayout,
+  onUncontestedToggle,
   onExpandAll,
   onResetExpansions,
   onResetAll,
@@ -93,6 +98,16 @@ export function DesktopHeader({
         >
           <TextAa weight={useShortLabels ? 'fill' : 'regular'} />
           Short labels
+        </Button>
+
+        <Button
+          onClick={onUncontestedToggle}
+          variant={showUncontested ? 'default' : 'outline'}
+          className="h-10 shrink-0 gap-2 text-[0.95rem]"
+          title="Highlight nodes that are far from any opponent-picked trait"
+        >
+          <Eye weight={showUncontested ? 'fill' : 'regular'} />
+          Show uncontested
         </Button>
 
         <div aria-hidden="true" className="mx-1 h-8 w-px shrink-0 bg-muted-foreground/30" />
