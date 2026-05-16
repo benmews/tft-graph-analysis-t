@@ -109,7 +109,7 @@ test.describe('Traits', () => {
   test('selecting two champions sharing a trait surfaces it with count 2', async ({ page }) => {
     // Find a pair of champions in the current set that share at least one trait,
     // pick the trait with the most pairs, and select two of its champions via
-    // the dev __tftClickNode hook (cycling unselected → expanded → selected).
+    // the dev __tftClickNode hook (a click toggles selected ↔ unselected).
     const target = await page.evaluate(() => {
       // The Available Champions list shows champions from currentSet.champions.
       // Read the bipartite graph from __cy: edges go champion-X ↔ trait-Y.
@@ -123,9 +123,8 @@ test.describe('Traits', () => {
       return { traitId: traitId.replace('trait-', ''), champIds: champIds.slice(0, 2) }
     })
 
-    // Click each champion twice to land in "selected" state (expand → select).
+    // A single click selects the champion.
     for (const cyId of target.champIds) {
-      await page.evaluate((id) => (window as any).__tftClickNode(id), cyId)
       await page.evaluate((id) => (window as any).__tftClickNode(id), cyId)
     }
 
@@ -205,19 +204,6 @@ test.describe('Header toggles', () => {
     await expect(tidy).not.toBeVisible()
   })
 
-  test('Unique traits checkbox hides single-champion trait nodes when off', async ({ page }) => {
-    const traitCount = () =>
-      page.evaluate(() => (window as any).__cy.nodes('[type="trait"]').length)
-
-    const before = await traitCount()
-    await page.locator('aside').getByText('Unique traits', { exact: true }).click()
-    const after = await traitCount()
-
-    // Set 17 has 11 unique traits; turning the checkbox off must remove all of them.
-    expect(after).toBeLessThan(before)
-    expect(before - after).toBe(11)
-  })
-
   test('selected champion stays visible even when its cost gets filtered out', async ({ page }) => {
     // Aatrox (1g) is alphabetically first.
     await page.locator('aside [data-testid="champion-row-aatrox"]').click()
@@ -252,11 +238,11 @@ test.describe('Header toggles', () => {
     // Vex shares no traits with Aatrox, so by default it's filtered out.
     await expect.poll(isVexVisible).toBe(false)
 
-    await page.locator('aside').getByText('Unique champions', { exact: true }).click()
+    await page.locator('aside').getByText('Always show unique champions', { exact: true }).click()
     await expect.poll(isVexVisible).toBe(true)
 
     // Toggling off again removes Vex.
-    await page.locator('aside').getByText('Unique champions', { exact: true }).click()
+    await page.locator('aside').getByText('Always show unique champions', { exact: true }).click()
     await expect.poll(isVexVisible).toBe(false)
   })
 })
@@ -317,8 +303,7 @@ test.describe('Trait tier styling', () => {
       return { cyId: vex.id() }
     })
 
-    // Click twice to land in selected (expand → select).
-    await page.evaluate((id) => (window as any).__tftClickNode(id), target.cyId)
+    // A single click selects Vex.
     await page.evaluate((id) => (window as any).__tftClickNode(id), target.cyId)
 
     // Doomer should appear at tier 0 — but since [1] has only one tier,

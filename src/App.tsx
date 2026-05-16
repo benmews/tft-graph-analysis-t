@@ -25,7 +25,6 @@ function App() {
   const [controlsOpen, setControlsOpen] = useState(false)
   const [useShortLabels, setUseShortLabels] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [showUniqueTraits, setShowUniqueTraits] = useState(true)
   const [showUniqueChampions, setShowUniqueChampions] = useState(false)
   const [tidyCounter, setTidyCounter] = useState(0)
   const [showUncontested, setShowUncontested] = useState(false)
@@ -55,7 +54,6 @@ function App() {
         opponentTraits,
         enabledCosts,
         fixedLayout,
-        showUniqueTraits,
         showUniqueChampions,
       }),
     [
@@ -66,7 +64,6 @@ function App() {
       opponentTraits,
       enabledCosts,
       fixedLayout,
-      showUniqueTraits,
       showUniqueChampions,
     ],
   )
@@ -86,33 +83,29 @@ function App() {
 
   /**
    * Click semantics:
-   *   - Trait node: cycle unselected → expanded → opponent-selected → unselected.
-   *   - Champion node: cycle unselected → expanded → selected → unselected.
+   *   - Champion node: toggle selected ↔ unselected.
+   *   - Trait node: toggle opponent ↔ unselected.
+   * A click drops the node from any prior expanded state so the toggle
+   * stays an unambiguous two-state cycle.
    */
   const handleNodeClick = (nodeId: string) => {
     if (nodeId.startsWith('champion-')) {
       const championId = nodeId.replace('champion-', '')
       const isSelected = selectedChampions.includes(championId)
-      const isExpanded = expandedNodes.includes(nodeId)
 
       if (isSelected) {
         setSelectedChampions((prev) => prev.filter((id) => id !== championId))
-      } else if (isExpanded) {
+      } else {
         setExpandedNodes((prev) => prev.filter((id) => id !== nodeId))
         setSelectedChampions((prev) => [...prev, championId])
-      } else {
-        setExpandedNodes((prev) => [...prev, nodeId])
       }
     } else {
       const isOpponent = opponentTraits.includes(nodeId)
-      const isExpanded = expandedNodes.includes(nodeId)
       if (isOpponent) {
         setOpponentTraits((prev) => prev.filter((id) => id !== nodeId))
-      } else if (isExpanded) {
+      } else {
         setExpandedNodes((prev) => prev.filter((id) => id !== nodeId))
         setOpponentTraits((prev) => [...prev, nodeId])
-      } else {
-        setExpandedNodes((prev) => [...prev, nodeId])
       }
     }
   }
@@ -124,7 +117,7 @@ function App() {
     setOpponentTraits([])
   }
   const handleExpandAll = () => {
-    // Trait → total champions in the data, used to detect unique traits.
+    // Trait → total champions in the data, used to skip traits with no champions.
     const traitChampCount = new Map<string, number>()
     for (const c of currentSet.champions) {
       for (const t of c.traits) {
@@ -138,7 +131,6 @@ function App() {
     for (const t of currentSet.traits) {
       const count = traitChampCount.get(t.id) ?? 0
       if (count === 0) continue
-      if (!showUniqueTraits && count <= 1) continue
       ids.push(`trait-${t.id}`)
     }
     setExpandedNodes(ids)
@@ -160,7 +152,6 @@ function App() {
 
   const handleLabelModeToggle = () => setUseShortLabels((v) => !v)
   const handleSidebarToggle = () => setSidebarOpen((v) => !v)
-  const handleUniqueTraitsToggle = () => setShowUniqueTraits((v) => !v)
   const handleUniqueChampionsToggle = () => setShowUniqueChampions((v) => !v)
   const handleTidyLayout = () => setTidyCounter((c) => c + 1)
   const handleUncontestedToggle = () => setShowUncontested((v) => !v)
@@ -203,9 +194,7 @@ function App() {
     selectedChampions,
     onToggleChampion: (id, add) =>
       setSelectedChampions((prev) => (add ? [...prev, id] : prev.filter((x) => x !== id))),
-    showUniqueTraits,
     showUniqueChampions,
-    onUniqueTraitsToggle: handleUniqueTraitsToggle,
     onUniqueChampionsToggle: handleUniqueChampionsToggle,
   }
 

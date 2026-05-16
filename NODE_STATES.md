@@ -17,7 +17,7 @@ This document clarifies the three distinct states that nodes can have in the TFT
 - **How to Select**: Click the champion name or +/- button in the sidebar's "Available Champions" section
 - **How to Deselect**: 
   - Click the champion again in the sidebar
-  - Click the selected champion node in the graph (special case - unselects instead of expanding)
+  - Click the selected champion node in the graph (a graph click toggles selection)
 - **Visual Appearance** (CSS class: `.pinned`):
   - **Larger size**: 120px × 120px (125px for traits)
   - **Golden solid border**: 4px thick, color `#f4b740`
@@ -25,10 +25,10 @@ This document clarifies the three distinct states that nodes can have in the TFT
 - **State Storage**: `selectedChampions` array in App.tsx (stores champion IDs without "champion-" prefix)
 - **Purpose**: Marks the user's core team composition that they're building around
 
-### 3. **Expanded** (via Graph Click)
-- **Definition**: Nodes (champions OR traits) that the user has clicked on in the graph visualization to reveal their neighbors
-- **How to Expand**: Click any node in the graph (except selected champion nodes, which deselect instead)
-- **How to Collapse**: Click the expanded node again in the graph
+### 3. **Expanded** (via "Expand All")
+- **Definition**: Nodes (champions OR traits) that have been expanded to reveal their neighbors
+- **How to Expand**: Use the **"Expand All"** button in the header. Graph clicks no longer expand — see "Graph Click Behavior" below.
+- **How to Collapse**: Use the **"Reset Expansions"** button (clears all expanded nodes)
 - **Visual Appearance** (CSS class: `.expanded`):
   - **Same size as unselected** (80px/85px)
   - **Black dotted border**: 4px thick, 100% opacity
@@ -48,10 +48,11 @@ This document clarifies the three distinct states that nodes can have in the TFT
   ]
   ```
 
-### Special Click Behavior for Selected Champions
-- When you click a **selected champion node** in the graph, it **deselects** (removes from `selectedChampions`) rather than expanding
-- This is handled in `App.tsx` lines 90-95 in the `handleNodeClick` function
-- All other nodes toggle their expanded state when clicked
+### Graph Click Behavior
+- **Champion node**: a click toggles it **selected ↔ unselected** (no longer expands)
+- **Trait node**: a click toggles it as an **opponent trait ↔ unselected** (no longer expands)
+- A click also drops the node from any prior expanded state, so the toggle stays an unambiguous two-state cycle
+- This is handled by the `handleNodeClick` function in `App.tsx` (around line 91)
 
 ### State Reset
 - **"Reset Expansions" button**: Clears only `expandedNodes`, keeps `selectedChampions`
@@ -60,10 +61,11 @@ This document clarifies the three distinct states that nodes can have in the TFT
 ## Code References
 
 ### App.tsx
-- **Line 38**: `selectedChampions` state - IDs of champions selected via sidebar
-- **Line 40**: `expandedNodes` state - IDs of nodes expanded via graph clicks  
-- **Lines 87-103**: `handleNodeClick` - Handles clicks on graph nodes
-- **Lines 104-111**: `handleResetExpansions` and `handleResetAll` - Reset functions
+- **Line 18**: `selectedChampions` state - IDs of champions selected via sidebar or a champion graph click
+- **Line 19**: `expandedNodes` state - IDs of nodes expanded via the "Expand All" button
+- **Line 20**: `opponentTraits` state - IDs of trait nodes marked as opponent via a trait graph click
+- **~Line 91**: `handleNodeClick` - Toggles selection (champions) / opponent (traits) on graph clicks
+- **~Lines 113-114**: `handleResetExpansions` and `handleResetAll` - Reset functions
 
 ### GraphVisualization.tsx
 - **Lines 99-108**: `.pinned` class styles (selected nodes)
@@ -82,6 +84,7 @@ Expanded:    [80px, thick BLACK DOTTED border, 14px font] ← Expanded via GRAPH
 ## User Mental Model
 
 Think of it this way:
-- **Sidebar selection** = "This is MY team" → Golden, prominent, persistent
-- **Graph expansion** = "Let me explore around this node" → Dotted border, temporary investigation
+- **Champion graph click / sidebar selection** = "This is MY team" → Golden, prominent, persistent
+- **Trait graph click** = "An opponent is contesting this trait" → opponent highlight
+- **"Expand All"** = "Show me the whole neighborhood" → Dotted border, broad exploration
 - **Unselected** = Everything else

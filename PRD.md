@@ -16,7 +16,7 @@ The tool combines graph theory algorithms, real-time layout calculations, multip
 - **Functionality**: Display champions and traits as an interactive node-link diagram with expand/collapse capability
 - **Purpose**: Allow users to explore champion-trait relationships beyond immediate neighbors to find optimal synergy circles
 - **Trigger**: User selects initial champions or loads a team composition
-- **Progression**: Select champions → Graph renders with immediate neighbors → Click node to expand neighbors → Layout adjusts smoothly → Repeat to explore deeper connections → Pin important nodes
+- **Progression**: Select champions → Graph renders with immediate neighbors → Click champion nodes to select / trait nodes to mark as opponent (or use "Expand All" to reveal the whole neighborhood) → Layout adjusts smoothly → Repeat to explore deeper connections → Pin important nodes
 - **Success criteria**: Users can navigate from any champion to discover all reachable trait combinations within 3 clicks; layout remains readable with up to 30 visible nodes
 
 ### Bipartite vs Edge-Toggle Visualization
