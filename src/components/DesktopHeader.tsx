@@ -1,14 +1,4 @@
-import {
-  ArrowsClockwise,
-  CaretDoubleLeft,
-  CaretDoubleRight,
-  Eye,
-  Lock,
-  MagicWand,
-  Plus,
-  Sword,
-  TextAa,
-} from '@phosphor-icons/react'
+import { CaretDoubleLeft, CaretDoubleRight } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import {
   Select,
@@ -78,9 +68,8 @@ export function DesktopHeader({
         <Button
           onClick={onFixedLayoutToggle}
           variant={fixedLayout ? 'default' : 'outline'}
-          className="h-10 shrink-0 gap-2 text-[0.95rem]"
+          className="h-10 shrink-0 text-[0.95rem]"
         >
-          <Lock weight={fixedLayout ? 'fill' : 'regular'} />
           Fixed Layout
         </Button>
 
@@ -88,10 +77,9 @@ export function DesktopHeader({
           <Button
             onClick={onTidyLayout}
             variant="outline"
-            className="h-10 shrink-0 gap-2 text-[0.95rem]"
+            className="h-10 shrink-0 text-[0.95rem]"
             title="Re-run the spring layout on the visible nodes"
           >
-            <MagicWand />
             Tidy layout
           </Button>
         )}
@@ -99,44 +87,38 @@ export function DesktopHeader({
         <Button
           onClick={onLabelModeToggle}
           variant={useShortLabels ? 'default' : 'outline'}
-          className="h-10 shrink-0 gap-2 text-[0.95rem]"
+          className="h-10 shrink-0 text-[0.95rem]"
         >
-          <TextAa weight={useShortLabels ? 'fill' : 'regular'} />
           Short labels
         </Button>
 
         <Button
           onClick={onOpponentToggle}
           variant={showOpponent ? 'default' : 'outline'}
-          className="h-10 shrink-0 gap-2 text-[0.95rem]"
+          className="h-10 shrink-0 text-[0.95rem]"
           title="Highlight opponent-picked traits and their adjacent champions"
         >
-          <Sword weight={showOpponent ? 'fill' : 'regular'} />
           Show opponent
         </Button>
 
         <Button
           onClick={onUncontestedToggle}
           variant={showUncontested ? 'default' : 'outline'}
-          className="h-10 shrink-0 gap-2 text-[0.95rem]"
+          className="h-10 shrink-0 text-[0.95rem]"
           title="Highlight nodes that are far from any opponent-picked trait"
         >
-          <Eye weight={showUncontested ? 'fill' : 'regular'} />
           Show uncontested
         </Button>
 
         <div aria-hidden="true" className="mx-1 h-8 w-px shrink-0 bg-muted-foreground/30" />
 
-        <Button onClick={onExpandAll} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
-          <Plus weight="bold" />
+        <Button onClick={onExpandAll} variant="outline" className="h-10 shrink-0 text-[0.95rem]">
           Expand All
         </Button>
-        <Button onClick={onResetExpansions} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
-          <ArrowsClockwise />
+        <Button onClick={onResetExpansions} variant="outline" className="h-10 shrink-0 text-[0.95rem]">
           Reset Expansions
         </Button>
-        <Button onClick={onResetAll} variant="outline" className="h-10 shrink-0 gap-2 text-[0.95rem]">
-          <ArrowsClockwise weight="bold" />
+        <Button onClick={onResetAll} variant="outline" className="h-10 shrink-0 text-[0.95rem]">
           Reset All
         </Button>
       </div>
@@ -144,7 +126,7 @@ export function DesktopHeader({
       <Button
         onClick={onSidebarToggle}
         variant="outline"
-        className="h-10 shrink-0 gap-2 text-[0.95rem]"
+        className="h-10 shrink-0 text-[0.95rem]"
         aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
         title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
       >
