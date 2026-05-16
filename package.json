@@ -54,7 +54,7 @@
         "cytoscape": "^3.33.3",
         "date-fns": "^4.1.0",
         "lucide-react": "^1.14.0",
-        "octokit": "^4.1.4",
+        "octokit": "^5.0.5",
         "react": "^19.2.5",
         "react-dom": "^19.2.5",
         "react-error-boundary": "^6.1.1",
